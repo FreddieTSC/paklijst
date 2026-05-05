@@ -178,6 +178,80 @@ export function useCloseTrip(tripId: string) {
   });
 }
 
+export function useDuplicateTrip() {
+  const qc = useQueryClient();
+  const { data: hh } = useHousehold();
+  const householdId = hh?.household?.id;
+
+  return useMutation({
+    mutationFn: async (sourceTripId: string) => {
+      const { data: source, error: e1 } = await supabase.from(T.trip)
+        .select('*').eq('id', sourceTripId).single();
+      if (e1) throw e1;
+
+      const { data: sourceItems, error: e2 } = await supabase.from(T.trip_item)
+        .select('*').eq('trip_id', sourceTripId);
+      if (e2) throw e2;
+
+      const { data: trip, error: e3 } = await supabase.from(T.trip).insert({
+        household_id: householdId!,
+        name: `${source.name} (kopie)`,
+        start_date: null,
+        end_date: null,
+        status: 'active',
+        context: source.context,
+      }).select('*').single();
+      if (e3) throw e3;
+
+      if (sourceItems && sourceItems.length > 0) {
+        const rows = sourceItems.map((si: TripItem) => ({
+          trip_id: trip.id,
+          item_id: si.item_id,
+          person_id: si.person_id,
+          checked: false,
+          added_manually: si.added_manually,
+          qty: si.qty ?? 1,
+        }));
+        const chunk = 100;
+        for (let i = 0; i < rows.length; i += chunk) {
+          const { error } = await supabase.from(T.trip_item).insert(rows.slice(i, i + chunk));
+          if (error) throw error;
+        }
+      }
+      return trip;
+    },
+    onSuccess: (trip) => {
+      qc.invalidateQueries({ queryKey: ['trips', householdId] });
+      qc.invalidateQueries({ queryKey: ['trip', trip.id] });
+    },
+  });
+}
+
+export function useUpdateTrip() {
+  const qc = useQueryClient();
+  const { data: hh } = useHousehold();
+  const householdId = hh?.household?.id;
+
+  return useMutation({
+    mutationFn: async ({ tripId, ...updates }: {
+      tripId: string;
+      name?: string;
+      start_date?: string | null;
+      end_date?: string | null;
+      status?: 'planning' | 'active' | 'closed';
+    }) => {
+      const { data, error } = await supabase.from(T.trip)
+        .update(updates).eq('id', tripId).select('*').single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (trip) => {
+      qc.invalidateQueries({ queryKey: ['trip', trip.id] });
+      qc.invalidateQueries({ queryKey: ['trips', householdId] });
+    },
+  });
+}
+
 export function useAddTripItem(tripId: string) {
   const qc = useQueryClient();
   return useMutation({

@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { useTrip, useToggleTripItem, useRemoveTripItem } from '@/hooks/useTrips';
+import { useTrip, useToggleTripItem, useRemoveTripItem, useDuplicateTrip, useUpdateTrip } from '@/hooks/useTrips';
 import { usePersons } from '@/hooks/usePersons';
+import { useRealtimeTrip } from '@/hooks/useRealtimeTrip';
 import { ItemRow } from './components/ItemRow';
 import { AddItemPopover } from './components/AddItemPopover';
 import { CloseTripModal } from './components/CloseTripModal';
 import { QuickAddBar } from './components/QuickAddBar';
-import type { Category, TripItem, Item } from '@/lib/types';
+import type { Category, Trip, TripItem, Item } from '@/lib/types';
 
 type Tab = 'pack' | 'todo' | 'wear';
 
@@ -26,12 +27,16 @@ export function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
   const nav = useNavigate();
   const { data, isLoading } = useTrip(tripId);
+  useRealtimeTrip(tripId);
   const { data: persons = [] } = usePersons();
   const toggle = useToggleTripItem(tripId!);
   const remove = useRemoveTripItem(tripId!);
+  const duplicate = useDuplicateTrip();
+  const updateTrip = useUpdateTrip();
   const [tab, setTab] = useState<Tab>('pack');
   const [adding, setAdding] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const personById = useMemo(() => new Map(persons.map(p => [p.id, p])), [persons]);
 
@@ -56,18 +61,39 @@ export function TripDetailPage() {
           <Link to="/trips" className="text-eyebrow text-muted hover:text-ink">← Reizen</Link>
           <div className="flex items-center gap-3">
             <span className="text-eyebrow text-muted">{trip.status}</span>
+            <button onClick={() => setEditing(!editing)}
+                    className="text-eyebrow text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
+              Bewerk
+            </button>
+            <button onClick={async () => {
+              const t = await duplicate.mutateAsync(trip.id);
+              nav(`/trips/${t.id}`);
+            }} className="text-eyebrow text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
+              Dupliceer
+            </button>
             {trip.status !== 'closed' && (
               <button onClick={() => setClosing(true)} className="text-eyebrow text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
-                Reis afsluiten
+                Afsluiten
               </button>
             )}
           </div>
         </div>
-        <h1 className="mt-3 text-h1 font-semibold tracking-tight">{trip.name}</h1>
-        <div className="mt-2 flex items-center gap-4 text-sm text-muted num">
-          {trip.start_date && trip.end_date && <span>{formatDate(trip.start_date)} → {formatDate(trip.end_date)}</span>}
-          <span>{totalChecked}/{totalCount} ingepakt · {percent}%</span>
-        </div>
+
+        {editing ? (
+          <EditTripForm trip={trip} onSave={async (updates) => {
+            await updateTrip.mutateAsync({ tripId: trip.id, ...updates });
+            setEditing(false);
+          }} onCancel={() => setEditing(false)} />
+        ) : (
+          <>
+            <h1 className="mt-3 text-h1 font-semibold tracking-tight">{trip.name}</h1>
+            <div className="mt-2 flex items-center gap-4 text-sm text-muted num">
+              {trip.start_date && trip.end_date && <span>{formatDate(trip.start_date)} → {formatDate(trip.end_date)}</span>}
+              <span>{totalChecked}/{totalCount} ingepakt · {percent}%</span>
+            </div>
+          </>
+        )}
+
         {/* Progress bar */}
         <div className="mt-3 h-1 bg-rule rounded-full overflow-hidden">
           <motion.div className="h-full bg-accent" initial={{ width: 0 }} animate={{ width: `${percent}%` }}
@@ -198,6 +224,42 @@ function groupByCategory(items: (TripItem & { item: Item })[], tab: Tab): CatGro
     groups.push({ category: cat, byPerson });
   }
   return groups;
+}
+
+function EditTripForm({ trip, onSave, onCancel }: {
+  trip: Trip;
+  onSave: (updates: { name?: string; start_date?: string | null; end_date?: string | null }) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(trip.name);
+  const [start, setStart] = useState(trip.start_date ?? '');
+  const [end, setEnd] = useState(trip.end_date ?? '');
+  const [saving, setSaving] = useState(false);
+
+  return (
+    <div className="mt-3 space-y-3">
+      <input className="input text-h2 font-semibold tracking-tight" value={name}
+             onChange={e => setName(e.target.value)} autoFocus />
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="block text-eyebrow mb-1">Vertrek</span>
+          <input type="date" className="input num" value={start} onChange={e => setStart(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="block text-eyebrow mb-1">Terug</span>
+          <input type="date" className="input num" value={end} onChange={e => setEnd(e.target.value)} />
+        </label>
+      </div>
+      <div className="flex gap-2">
+        <button className="btn-primary" disabled={saving} onClick={async () => {
+          setSaving(true);
+          await onSave({ name: name.trim() || trip.name, start_date: start || null, end_date: end || null });
+          setSaving(false);
+        }}>{saving ? 'Opslaan…' : 'Opslaan'}</button>
+        <button className="btn-ghost" onClick={onCancel}>Annuleer</button>
+      </div>
+    </div>
+  );
 }
 
 function formatDate(iso: string) {

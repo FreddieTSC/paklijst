@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { useTrips } from '@/hooks/useTrips';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTrips, useDuplicateTrip } from '@/hooks/useTrips';
 import type { Trip, TripStatus } from '@/lib/types';
 
 const STATUS_LABEL: Record<TripStatus, string> = {
@@ -10,6 +10,8 @@ const STATUS_LABEL: Record<TripStatus, string> = {
 
 export function TripsListPage() {
   const { data: trips = [], isLoading } = useTrips();
+  const nav = useNavigate();
+  const duplicate = useDuplicateTrip();
 
   const grouped: Record<TripStatus, Trip[]> = { active: [], planning: [], closed: [] };
   for (const t of trips) grouped[t.status].push(t);
@@ -47,7 +49,10 @@ export function TripsListPage() {
             {grouped[status].map((t, idx) => (
               <li key={t.id}
                   className={`col-span-12 ${idx % 5 === 0 ? 'md:col-span-7' : 'md:col-span-5'}`}>
-                <TripCard trip={t} />
+                <TripCard trip={t} onDuplicate={async () => {
+                  const trip = await duplicate.mutateAsync(t.id);
+                  nav(`/trips/${trip.id}`);
+                }} />
               </li>
             ))}
           </ul>
@@ -57,30 +62,37 @@ export function TripsListPage() {
   );
 }
 
-function TripCard({ trip }: { trip: Trip }) {
+function TripCard({ trip, onDuplicate }: { trip: Trip; onDuplicate: () => void }) {
   const ctx = trip.context;
   const tags = [...(ctx.triptypes ?? []), ...(ctx.weather ?? []), ...(ctx.activities ?? [])];
   return (
-    <Link to={`/trips/${trip.id}`}
-          className="block card p-5 group hover:border-ink/40 transition-colors">
-      <div className="flex items-start justify-between gap-4">
-        <h3 className="text-h2 font-semibold tracking-tight">{trip.name}</h3>
-        <span className="text-eyebrow text-muted shrink-0">→</span>
-      </div>
-      <div className="mt-2 num text-xs text-muted">
-        {trip.start_date && trip.end_date
-          ? `${formatDate(trip.start_date)} → ${formatDate(trip.end_date)}`
-          : 'Geen datums'}
-      </div>
-      {tags.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {tags.slice(0, 6).map(t => (
-            <span key={t} className="text-[11px] px-2 py-0.5 border border-rule rounded-sm">{t}</span>
-          ))}
-          {tags.length > 6 && <span className="text-[11px] text-muted">+{tags.length - 6}</span>}
+    <div className="card group hover:border-ink/40 transition-colors relative">
+      <Link to={`/trips/${trip.id}`} className="block p-5">
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="text-h2 font-semibold tracking-tight">{trip.name}</h3>
+          <span className="text-eyebrow text-muted shrink-0">→</span>
         </div>
-      )}
-    </Link>
+        <div className="mt-2 num text-xs text-muted">
+          {trip.start_date && trip.end_date
+            ? `${formatDate(trip.start_date)} → ${formatDate(trip.end_date)}`
+            : 'Geen datums'}
+        </div>
+        {tags.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {tags.slice(0, 6).map(t => (
+              <span key={t} className="text-[11px] px-2 py-0.5 border border-rule rounded-sm">{t}</span>
+            ))}
+            {tags.length > 6 && <span className="text-[11px] text-muted">+{tags.length - 6}</span>}
+          </div>
+        )}
+      </Link>
+      <div className="px-5 pb-4 pt-0">
+        <button onClick={e => { e.stopPropagation(); onDuplicate(); }}
+                className="text-xs text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink transition-colors">
+          Dupliceer reis
+        </button>
+      </div>
+    </div>
   );
 }
 
