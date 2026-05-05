@@ -11,7 +11,7 @@ export type Verdict    = 'used' | 'unused' | 'missing';
 export interface Household        { id: string; name: string; created_at: string; }
 export interface HouseholdMember  { household_id: string; user_id: string; role: 'owner'|'member'; display_name: string; }
 export interface Person           { id: string; household_id: string; name: string; is_child: boolean; user_id: string|null; }
-export interface Item             { id: string; household_id: string; name: string; kind: ItemKind; wear_on_travel: boolean; default_category: Category; notes: string|null; qty: number; }
+export interface Item             { id: string; household_id: string; name: string; kind: ItemKind; wear_on_travel: boolean; default_category: Category; notes: string|null; qty: number; qty_per_day: boolean; }
 export interface Tag              { id: string; household_id: string; name: string; kind: TagKind; }
 export interface ItemTag          { item_id: string; tag_id: string; }
 export interface ItemForPerson    { item_id: string; person_id: string; }

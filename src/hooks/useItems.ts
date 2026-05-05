@@ -56,6 +56,7 @@ export interface ItemDraft {
   wear_on_travel: boolean;
   notes: string | null;
   qty: number;
+  qty_per_day: boolean;
   tag_ids: string[];
   person_ids: string[];
 }
@@ -76,6 +77,7 @@ export function useUpsertItem() {
         wear_on_travel: draft.wear_on_travel,
         notes: draft.notes,
         qty: Math.max(1, Math.floor(draft.qty || 1)),
+        qty_per_day: draft.qty_per_day,
       };
       if (itemId) {
         const { error } = await supabase.from(T.item).update(payload).eq('id', itemId);

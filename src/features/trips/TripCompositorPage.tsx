@@ -48,15 +48,23 @@ export function TripCompositorPage() {
   const activityTags  = tags.filter(t => t.kind === 'activity');
   const customTags    = tags.filter(t => t.kind === 'custom');
 
+  const days = useMemo(() => {
+    if (!start || !end) return undefined;
+    const ms = new Date(end).getTime() - new Date(start).getTime();
+    if (!Number.isFinite(ms) || ms < 0) return undefined;
+    return Math.max(1, Math.round(ms / 86_400_000) + 1);
+  }, [start, end]);
+
   const ctx: Context = useMemo(() => ({
     persons:    selPersons,
     triptypes:  tagNamesByIds(selTriptypes,  triptypeTags),
     weather:    tagNamesByIds(selWeather,   weatherTags),
     activities: tagNamesByIds([...selActivities], [...activityTags, ...customTags]),
-  }), [selPersons, selTriptypes, selWeather, selActivities, triptypeTags, weatherTags, activityTags, customTags]);
+    days,
+  }), [selPersons, selTriptypes, selWeather, selActivities, triptypeTags, weatherTags, activityTags, customTags, days]);
 
   const lib: Library = useMemo(() => ({
-    items: items.map(i => ({ id: i.id, name: i.name, kind: i.kind, default_category: i.default_category, qty: i.qty })),
+    items: items.map(i => ({ id: i.id, name: i.name, kind: i.kind, default_category: i.default_category, qty: i.qty, qty_per_day: i.qty_per_day })),
     tags: tags.map(t => ({ id: t.id, name: t.name, kind: t.kind })),
     itemTags: items.flatMap(i => i.tag_ids.map(tag_id => ({ item_id: i.id, tag_id }))),
     itemForPerson: items.flatMap(i => i.person_ids.map(person_id => ({ item_id: i.id, person_id }))),
@@ -167,6 +175,7 @@ export function TripCompositorPage() {
           </p>
           <div className="mt-5 border-t border-rule pt-4 text-xs text-muted">
             <p>Personen: {selPersons.length || '—'}</p>
+            <p>Reisduur: {days ? `${days} dag${days === 1 ? '' : 'en'}` : '—'}</p>
             <p>Reistypes: {ctx.triptypes.join(', ') || '—'}</p>
             <p>Weer: {ctx.weather.join(', ') || '—'}</p>
             <p>Activiteiten: {ctx.activities.join(', ') || '—'}</p>

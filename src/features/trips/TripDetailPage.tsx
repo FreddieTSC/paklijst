@@ -6,6 +6,7 @@ import { usePersons } from '@/hooks/usePersons';
 import { ItemRow } from './components/ItemRow';
 import { AddItemPopover } from './components/AddItemPopover';
 import { CloseTripModal } from './components/CloseTripModal';
+import { QuickAddBar } from './components/QuickAddBar';
 import type { Category, TripItem, Item } from '@/lib/types';
 
 type Tab = 'pack' | 'todo' | 'wear';
@@ -82,6 +83,8 @@ export function TripDetailPage() {
         <div className="flex-1" />
         <button onClick={() => setAdding(true)} className="btn-ghost mb-2 text-sm">+ Item</button>
       </div>
+
+      <QuickAddBar tripId={tripId!} existingItemIds={new Set(items.map(i => i.item_id))} />
 
       {/* List body — split by category, with per-person grouping inside */}
       <div className="space-y-8">

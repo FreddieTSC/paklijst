@@ -114,4 +114,28 @@ describe('generateTripItems', () => {
     const out = generateTripItems(lib, { persons: [], triptypes: ['citytrip'], weather: [], activities: [] });
     expect(out.map(o => o.item_id)).toEqual(['i1']);
   });
+
+  it('multiplies qty by days for items marked qty_per_day', () => {
+    const lib: Library = {
+      ...empty,
+      items: [
+        { id: 'i1', name: 'onderbroek',  kind: 'packable', default_category: 'kleren', qty: 1, qty_per_day: true },
+        { id: 'i2', name: 'tandenborstel', kind: 'packable', default_category: 'pharmacie', qty: 1, qty_per_day: false },
+      ],
+    };
+    const out = generateTripItems(lib, { persons: [], triptypes: [], weather: [], activities: [], days: 7 });
+    expect(out).toEqual([
+      { item_id: 'i1', qty: 7 },
+      { item_id: 'i2', qty: 1 },
+    ]);
+  });
+
+  it('falls back to qty=baseQty when days is missing', () => {
+    const lib: Library = {
+      ...empty,
+      items: [{ id: 'i1', name: 'sok', kind: 'packable', default_category: 'kleren', qty: 2, qty_per_day: true }],
+    };
+    const out = generateTripItems(lib, { persons: [], triptypes: [], weather: [], activities: [] });
+    expect(out).toEqual([{ item_id: 'i1', qty: 2 }]);
+  });
 });

@@ -30,6 +30,7 @@ export function ItemEditor({ item, onClose }: { item?: ItemWithRelations; onClos
     wear_on_travel: item?.wear_on_travel ?? false,
     notes: item?.notes ?? '',
     qty: item?.qty ?? 1,
+    qty_per_day: item?.qty_per_day ?? false,
     tag_ids: item?.tag_ids ?? [],
     person_ids: item?.person_ids ?? [],
   });
@@ -96,7 +97,7 @@ export function ItemEditor({ item, onClose }: { item?: ItemWithRelations; onClos
           </label>
           {draft.kind === 'packable' && (
             <label className="block">
-              <span className="block text-eyebrow mb-2">Aantal</span>
+              <span className="block text-eyebrow mb-2">Aantal{draft.qty_per_day ? ' / dag' : ''}</span>
               <input type="number" min={1} max={99} className="input num text-center"
                      value={draft.qty}
                      onChange={e => setDraft({ ...draft, qty: Math.max(1, parseInt(e.target.value) || 1) })} />
@@ -112,11 +113,18 @@ export function ItemEditor({ item, onClose }: { item?: ItemWithRelations; onClos
         </div>
 
         {draft.kind === 'packable' && (
-          <label className="flex items-center gap-2 text-sm text-muted">
-            <input type="checkbox" checked={draft.wear_on_travel}
-                   onChange={e => setDraft({ ...draft, wear_on_travel: e.target.checked })} />
-            <span><span className="text-ink font-medium">Aandoen</span> tijdens reis (niet inpakken)</span>
-          </label>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm text-muted">
+              <input type="checkbox" checked={draft.wear_on_travel}
+                     onChange={e => setDraft({ ...draft, wear_on_travel: e.target.checked })} />
+              <span><span className="text-ink font-medium">Aandoen</span> tijdens reis (niet inpakken)</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-muted">
+              <input type="checkbox" checked={draft.qty_per_day}
+                     onChange={e => setDraft({ ...draft, qty_per_day: e.target.checked })} />
+              <span>Aantal <span className="text-ink font-medium">per dag</span> (vermenigvuldigt met reisduur)</span>
+            </label>
+          </div>
         )}
 
         {persons.length > 0 && (
