@@ -90,11 +90,12 @@ Vijf hoofdschermen:
 ```
 
 **Compositor (scherm 2):**
-- Vier chip-groepen (collapsible):
+- Vier chip-groepen (collapsible). Personen komen uit `person`-tabel; de andere drie groepen tonen `tag`-rijen gefilterd op `kind`:
   - **Wie?** — alle `person`-rijen van het huishouden
-  - **Type reis** — citytrip · camper · tent · hotel · festival · zakenreis
-  - **Weer** — warm · gemiddeld · koud · regen
-  - **Activiteiten** — fiets · zwemmen · wandelen · uitgaan · werk
+  - **Type reis** (`tag.kind='triptype'`) — geseed: citytrip · camper · tent · hotel · festival · zakenreis
+  - **Weer** (`tag.kind='weather'`) — geseed: warm · gemiddeld · koud · regen
+  - **Activiteiten** (`tag.kind='activity'`) — geseed: fiets · zwemmen · wandelen · uitgaan · werk
+- Alle bovenstaande tags worden bij huishouden-creatie geseed via `scripts/seed-tags.ts`. Gebruiker kan eigen tags toevoegen (`kind='custom'`) via de bibliotheek.
 - Live-preview onderaan: "Voorstel: 87 items · 12 todos"
 - "Maak reis aan" → genereert `trip_item`-rijen, navigeert naar scherm 3
 
@@ -149,14 +150,14 @@ item
   name              text          -- "muggenmelk", "katten eten geven"
   kind              text          -- 'packable' | 'todo'
   wear_on_travel    boolean       -- "aandoen"-vlag (alleen relevant voor packable)
-  default_category  text          -- 'stuff' | 'eten' | 'electronica' | 'pharmacie' | 'spelletjes' | 'kleren' | 'todo'
+  default_category  text          -- check constraint: 'stuff' | 'eten' | 'electronica' | 'pharmacie' | 'spelletjes' | 'kleren' | 'todo'
   notes             text          -- vrij tekstveld
 
 tag
   id            uuid pk
   household_id  uuid fk → household
   name          text          -- "camper", "warm", "fiets"
-  kind          text          -- 'triptype' | 'weather' | 'activity' | 'custom'
+  kind          text          -- check constraint: 'triptype' | 'weather' | 'activity' | 'custom'
   unique (household_id, name)
 
 item_tag
@@ -210,10 +211,11 @@ Wanneer compositor "Maak reis aan" doet met context `{persons, triptypes, weathe
    - Alle items waarvan tenminste één tag in `triptypes ∪ weather ∪ activities` zit
    - Plus alle items in `item_for_person` waar `person_id ∈ persons`
    - Plus alle items zonder tags én zonder `item_for_person` (dus altijd-meename uit categorie 'stuff')
-2. Filter weg: items waarvoor `trip_feedback.verdict='unused'`-tellers ≥ drempel (bv. 3) bij vergelijkbare context. "Vergelijkbare context" = ten minste één gemeenschappelijke triptype-tag.
+2. Filter weg: items waarvoor `trip_feedback.verdict='unused'`-tellers ≥ `UNUSED_FILTER_THRESHOLD` bij vergelijkbare context. "Vergelijkbare context" = ten minste één gemeenschappelijke triptype-tag.
 3. Insert in `trip_item` met `added_manually=false`.
 
-Drempelwaarden zijn config-constanten, niet user-instelbaar in MVP.
+Constanten (in MVP hardcoded, niet user-instelbaar):
+- `UNUSED_FILTER_THRESHOLD = 3` — aantal "unused"-feedbacks vóór een item uit gegenereerde lijst valt
 
 ### RLS-beleid (Row-Level Security)
 
@@ -238,7 +240,7 @@ Op scherm 3, knop "Reis afsluiten":
 2. App vraagt: "Heb je iets gemist?" — vrije input met autocomplete op bibliotheek.
 3. Voor elk item dat gemarkeerd is:
    - 'unused' → schrijf `trip_feedback` rij met verdict 'unused' en `context_snapshot = trip.context`
-   - 'missing' → schrijf rij met verdict 'missing' (eventueel: voeg item toe aan bibliotheek als nog niet bestaat)
+   - 'missing' → schrijf rij met verdict 'missing'. Als naam niet matcht met bestaand item: open inline modal voor "nieuw item aanmaken" (naam, categorie, optioneel persoon/tags). Pas na bevestiging wordt item én feedback rij geschreven.
    - 'used' (alle gevinkte items) → schrijf rij met verdict 'used'
 4. Trip-status → 'closed'.
 
@@ -252,7 +254,7 @@ Generator gebruikt `trip_feedback` zoals beschreven in §5.
 
 - Auth (email + password via Supabase)
 - Eén-persoons huishouden (geen uitnodigingen)
-- Excel-import-script: leest huidige `template reis (version 2).xlsx`, vult `item`, `tag`, `item_tag`, `item_for_person`, `person`
+- Excel-import: éénmalig Node-script (`scripts/import-excel.ts`) dat lokaal draait, leest `template reis (version 2).xlsx` met `xlsx` package, schrijft naar Supabase via service-role key. Print preview vóór commit; vraagt y/n bevestiging. Geen in-app upload in MVP.
 - Bibliotheek-CRUD (items aanmaken/bewerken, tags toekennen)
 - Reis-compositor met chips → generator
 - Inpak-scherm met afvinken (geen realtime nog)
