@@ -9,6 +9,9 @@ dist/
 # TypeScript incremental build cache
 *.tsbuildinfo
 
+# Netlify CLI state (per-machine site link, not source)
+.netlify/
+
 # Generated import artifacts (contain private household data — never commit)
 scripts/import-output.json
 scripts/import.sql

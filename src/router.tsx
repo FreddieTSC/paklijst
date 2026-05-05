@@ -2,8 +2,6 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './features/auth/LoginPage';
-import { SignupPage } from './features/auth/SignupPage';
-import { OnboardingPage } from './features/auth/OnboardingPage';
 import { TripsListPage } from './features/trips/TripsListPage';
 import { TripCompositorPage } from './features/trips/TripCompositorPage';
 import { TripDetailPage } from './features/trips/TripDetailPage';
@@ -12,8 +10,8 @@ import { ProfilePage } from './features/profile/ProfilePage';
 
 export const router = createBrowserRouter([
   { path: '/login',      element: <LoginPage /> },
-  { path: '/signup',     element: <SignupPage /> },
-  { path: '/onboarding', element: <ProtectedRoute><OnboardingPage /></ProtectedRoute> },
+  { path: '/signup',     element: <Navigate to="/login" replace /> },
+  { path: '/onboarding', element: <Navigate to="/trips" replace /> },
   {
     path: '/',
     element: <ProtectedRoute><Layout /></ProtectedRoute>,
