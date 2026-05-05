@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { T } from '@/lib/db';
 import { useHousehold } from './useHousehold';
 import type { Item, ItemTag, ItemForPerson, Category, ItemKind } from '@/lib/types';
 
@@ -17,9 +18,9 @@ export function useItems() {
     enabled: !!householdId,
     queryFn: async () => {
       const [itemsRes, itRes, ipRes] = await Promise.all([
-        supabase.from('item').select('*').eq('household_id', householdId!).order('name'),
-        supabase.from('item_tag').select('*'),
-        supabase.from('item_for_person').select('*'),
+        supabase.from(T.item).select('*').eq('household_id', householdId!).order('name'),
+        supabase.from(T.item_tag).select('*'),
+        supabase.from(T.item_for_person).select('*'),
       ]);
       if (itemsRes.error) throw itemsRes.error;
       if (itRes.error) throw itRes.error;
@@ -75,23 +76,23 @@ export function useUpsertItem() {
         notes: draft.notes,
       };
       if (itemId) {
-        const { error } = await supabase.from('item').update(payload).eq('id', itemId);
+        const { error } = await supabase.from(T.item).update(payload).eq('id', itemId);
         if (error) throw error;
         // Replace tag and person links
-        await supabase.from('item_tag').delete().eq('item_id', itemId);
-        await supabase.from('item_for_person').delete().eq('item_id', itemId);
+        await supabase.from(T.item_tag).delete().eq('item_id', itemId);
+        await supabase.from(T.item_for_person).delete().eq('item_id', itemId);
       } else {
-        const { data, error } = await supabase.from('item').insert(payload).select('id').single();
+        const { data, error } = await supabase.from(T.item).insert(payload).select('id').single();
         if (error) throw error;
         itemId = data.id;
       }
       if (draft.tag_ids.length) {
-        const { error } = await supabase.from('item_tag')
+        const { error } = await supabase.from(T.item_tag)
           .insert(draft.tag_ids.map(tag_id => ({ item_id: itemId!, tag_id })));
         if (error) throw error;
       }
       if (draft.person_ids.length) {
-        const { error } = await supabase.from('item_for_person')
+        const { error } = await supabase.from(T.item_for_person)
           .insert(draft.person_ids.map(person_id => ({ item_id: itemId!, person_id })));
         if (error) throw error;
       }
@@ -107,7 +108,7 @@ export function useDeleteItem() {
   const householdId = hh?.household?.id;
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('item').delete().eq('id', id);
+      const { error } = await supabase.from(T.item).delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['items', householdId] }),

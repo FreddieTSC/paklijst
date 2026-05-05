@@ -6,6 +6,7 @@ import { usePersons } from '@/hooks/usePersons';
 import { useCreateTrip } from '@/hooks/useTrips';
 import { generateTripItems, type Library, type Context } from '@/lib/generator';
 import { supabase } from '@/lib/supabase';
+import { T } from '@/lib/db';
 import { useQuery } from '@tanstack/react-query';
 import { useHousehold } from '@/hooks/useHousehold';
 import type { TripFeedback } from '@/lib/types';
@@ -34,9 +35,9 @@ export function TripCompositorPage() {
     enabled: !!hh?.household?.id,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('trip_feedback')
-        .select('*, trip!inner(household_id)' as string)
-        .eq('trip.household_id' as string, hh!.household!.id);
+        .from(T.trip_feedback)
+        .select(`*, ${T.trip}!inner(household_id)`)
+        .eq(`${T.trip}.household_id`, hh!.household!.id);
       if (error) throw error;
       return (data ?? []) as unknown as TripFeedback[];
     },
@@ -86,7 +87,13 @@ export function TripCompositorPage() {
       });
       nav(`/trips/${trip.id}`, { replace: true });
     } catch (caught) {
-      setErr(caught instanceof Error ? caught.message : String(caught));
+      const msg =
+        caught instanceof Error           ? caught.message :
+        typeof caught === 'object' && caught !== null && 'message' in caught
+                                           ? String((caught as { message: unknown }).message) :
+        String(caught);
+      console.error('[trip-compositor] failed:', caught);
+      setErr(msg);
     }
   }
 

@@ -42,7 +42,15 @@ export function ItemEditor({ item, onClose }: { item?: ItemWithRelations; onClos
     setErr(null);
     if (!draft.name.trim()) { setErr('Geef een naam.'); return; }
     try { await upsert.mutateAsync({ ...draft, name: draft.name.trim() }); onClose(); }
-    catch (caught) { setErr(caught instanceof Error ? caught.message : String(caught)); }
+    catch (caught) {
+      const msg =
+        caught instanceof Error           ? caught.message :
+        typeof caught === 'object' && caught !== null && 'message' in caught
+                                           ? String((caught as { message: unknown }).message) :
+        String(caught);
+      console.error('[item-editor] failed:', caught);
+      setErr(msg);
+    }
   }
 
   async function onDelete() {

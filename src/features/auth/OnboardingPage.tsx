@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { RPC } from '@/lib/db';
 import { useAuth } from '@/hooks/useAuth';
 import { AuthShell } from './AuthShell';
 
@@ -34,29 +35,26 @@ export function OnboardingPage() {
       if (!hhName.trim() || !displayName.trim() || validPersons.length === 0) {
         throw new Error('Vul huishouden, je naam en minstens één persoon in.');
       }
-      // 1) household
-      const { data: hh, error: e1 } = await supabase.from('household')
-        .insert({ name: hhName.trim() })
-        .select('id').single();
-      if (e1) throw e1;
-      // 2) member (owner)
-      const { error: e2 } = await supabase.from('household_member')
-        .insert({ household_id: hh.id, user_id: user.id, role: 'owner', display_name: displayName.trim() });
-      if (e2) throw e2;
-      // 3) seed default tags
-      const { error: e3 } = await supabase.rpc('seed_default_tags', { h_id: hh.id });
-      if (e3) throw e3;
-      // 4) persons
-      const personRows = validPersons.map(p => ({
-        household_id: hh.id, name: p.name.trim(), is_child: p.is_child, user_id: null,
-      }));
-      const { error: e4 } = await supabase.from('person').insert(personRows);
-      if (e4) throw e4;
+      // Single atomic SECURITY DEFINER RPC: creates household + owner-member +
+      // seeded tags + persons. Bypasses the chicken-and-egg between RLS SELECT
+      // policy and INSERT...RETURNING for the just-created household.
+      const { error: rpcErr } = await supabase.rpc(RPC.create_household, {
+        p_name:         hhName.trim(),
+        p_display_name: displayName.trim(),
+        p_persons:      validPersons.map(p => ({ name: p.name.trim(), is_child: p.is_child })),
+      });
+      if (rpcErr) throw rpcErr;
 
       qc.invalidateQueries();
       nav('/trips', { replace: true });
     } catch (caught: unknown) {
-      const msg = caught instanceof Error ? caught.message : String(caught);
+      // Supabase errors are plain objects with `.message`/`.details`/`.hint`/`.code`.
+      const msg =
+        caught instanceof Error           ? caught.message :
+        typeof caught === 'object' && caught !== null && 'message' in caught
+                                           ? String((caught as { message: unknown }).message) :
+        String(caught);
+      console.error('[onboarding] failed:', caught);
       setErr(msg);
     } finally {
       setLoading(false);

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { T } from '@/lib/db';
 import { useHousehold } from './useHousehold';
 import type { Trip, TripContext, TripItem, Item } from '@/lib/types';
 import type { TripItemDraft } from '@/lib/generator';
@@ -11,7 +12,7 @@ export function useTrips() {
     queryKey: ['trips', householdId],
     enabled: !!householdId,
     queryFn: async () => {
-      const { data, error } = await supabase.from('trip')
+      const { data, error } = await supabase.from(T.trip)
         .select('*').eq('household_id', householdId!)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -25,11 +26,11 @@ export function useTrip(tripId: string | undefined) {
     queryKey: ['trip', tripId],
     enabled: !!tripId,
     queryFn: async () => {
-      const { data: trip, error: tErr } = await supabase.from('trip')
+      const { data: trip, error: tErr } = await supabase.from(T.trip)
         .select('*').eq('id', tripId!).single();
       if (tErr) throw tErr;
-      const { data: items, error: iErr } = await supabase.from('trip_item')
-        .select('*, item:item_id(*)').eq('trip_id', tripId!);
+      const { data: items, error: iErr } = await supabase.from(T.trip_item)
+        .select(`*, item:${T.item}(*)`).eq('trip_id', tripId!);
       if (iErr) throw iErr;
       return { trip, items: (items as unknown as (TripItem & { item: Item })[]) ?? [] };
     },
@@ -51,7 +52,7 @@ export function useCreateTrip() {
 
   return useMutation({
     mutationFn: async (input: CreateTripInput) => {
-      const { data: trip, error: e1 } = await supabase.from('trip').insert({
+      const { data: trip, error: e1 } = await supabase.from(T.trip).insert({
         household_id: householdId!,
         name: input.name,
         start_date: input.start_date,
@@ -72,7 +73,7 @@ export function useCreateTrip() {
         // chunk to avoid payload limits
         const chunk = 100;
         for (let i = 0; i < rows.length; i += chunk) {
-          const { error } = await supabase.from('trip_item').insert(rows.slice(i, i + chunk));
+          const { error } = await supabase.from(T.trip_item).insert(rows.slice(i, i + chunk));
           if (error) throw error;
         }
       }
@@ -89,7 +90,7 @@ export function useToggleTripItem(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, checked }: { id: string; checked: boolean }) => {
-      const { error } = await supabase.from('trip_item').update({
+      const { error } = await supabase.from(T.trip_item).update({
         checked,
         checked_at: checked ? new Date().toISOString() : null,
       }).eq('id', id);
@@ -118,7 +119,7 @@ export function useRemoveTripItem(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('trip_item').delete().eq('id', id);
+      const { error } = await supabase.from(T.trip_item).delete().eq('id', id);
       if (error) throw error;
     },
     onMutate: async (id) => {
@@ -143,7 +144,7 @@ export function useAddTripItem(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { item_id: string; person_id?: string | null }) => {
-      const { data, error } = await supabase.from('trip_item').insert({
+      const { data, error } = await supabase.from(T.trip_item).insert({
         trip_id: tripId,
         item_id: input.item_id,
         person_id: input.person_id ?? null,

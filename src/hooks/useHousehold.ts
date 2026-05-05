@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { T } from '@/lib/db';
 import { useAuth } from './useAuth';
 import type { Household, HouseholdMember } from '@/lib/types';
 
@@ -16,7 +17,7 @@ export function useHousehold() {
     enabled: !!user && !authLoading,
     queryFn: async () => {
       const { data: members, error: mErr } = await supabase
-        .from('household_member')
+        .from(T.household_member)
         .select('*')
         .eq('user_id', user!.id)
         .limit(1);
@@ -25,7 +26,7 @@ export function useHousehold() {
       if (!member) return { household: null, member: null };
 
       const { data: hh, error: hErr } = await supabase
-        .from('household')
+        .from(T.household)
         .select('*')
         .eq('id', member.household_id)
         .single();

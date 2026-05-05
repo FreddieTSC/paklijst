@@ -1,5 +1,11 @@
-import * as XLSX from 'xlsx';
+import * as XLSX_ from 'xlsx';
 import type { Category, ItemKind } from '../src/lib/types';
+
+// `xlsx` ships an ambiguous ESM/CJS bundle. Under tsx/Node ESM, the named exports
+// land on `.default`, while under vitest the namespace import works directly.
+// This shim covers both.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const XLSX: typeof XLSX_ = ((XLSX_ as unknown as { default?: typeof XLSX_ }).default ?? XLSX_);
 
 export interface ParsedItem  { name: string; kind: ItemKind; default_category: Category; }
 export interface ParsedItemTag    { item: string; tag: string; }
@@ -99,7 +105,7 @@ export function parseTemplateExcel(filePath: string): ParsedPlan {
   return { persons, items, itemTags, itemForPerson };
 }
 
-function sheetRows(wb: XLSX.WorkBook, sheetName: string): unknown[][] {
+function sheetRows(wb: XLSX_.WorkBook, sheetName: string): unknown[][] {
   const ws = wb.Sheets[sheetName];
   return XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '' });
 }

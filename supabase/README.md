@@ -13,6 +13,7 @@ Open the SQL editor in your project dashboard and paste each file in order:
 1. `migrations/0001_init_schema.sql`
 2. `migrations/0002_rls_policies.sql`
 3. `migrations/0003_seed_tags_function.sql`
+4. `migrations/0004_create_household_rpc.sql`
 
 Run each one. They are idempotent, so re-running is safe.
 
@@ -30,9 +31,9 @@ Copy `.env.example` to `.env.local` in the repo root and fill in the values.
 
 1. `npm run dev`, open http://localhost:5173
 2. Sign up → onboarding → create your household + persons.
-3. Find the household ID in the database (Table editor → `household` → copy `id`), or via SQL:
+3. Find the household ID in the database (Table editor → `inpaklijst_household` → copy `id`), or via SQL:
    ```sql
-   select id, name from household;
+   select id, name from inpaklijst_household;
    ```
 4. Set env vars and run:
    ```bash

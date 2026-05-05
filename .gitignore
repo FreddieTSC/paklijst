@@ -5,3 +5,10 @@ dist/
 .env.local
 .DS_Store
 *.log
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Generated import artifacts (contain private household data — never commit)
+scripts/import-output.json
+scripts/import.sql

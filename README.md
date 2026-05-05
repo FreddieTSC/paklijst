@@ -26,7 +26,7 @@ Volgende fasen — zie [`docs/superpowers/specs/2026-05-05-inpaklijst-design.md`
 
 ### 1. Maak een Supabase-project
 
-Volg [`supabase/README.md`](supabase/README.md) — dat zet je schema + RLS op via 3 SQL-bestanden en
+Volg [`supabase/README.md`](supabase/README.md) — dat zet je schema + RLS op via 4 SQL-bestanden en
 geeft je de URL + anon key die je hieronder nodig hebt.
 
 ### 2. Lokale env
@@ -59,7 +59,7 @@ Een keer per huishouden:
 # Vul alleen voor de import — niet committen!
 export SUPABASE_URL=https://xxxxx.supabase.co
 export SUPABASE_SERVICE_ROLE_KEY=eyJ...        # service role key uit Settings → API
-export HOUSEHOLD_ID=<uuid van je huishouden>   # uit Supabase Table editor of: select id from household;
+export HOUSEHOLD_ID=<uuid van je huishouden>   # uit Supabase Table editor of: select id from inpaklijst_household;
 npm run import
 ```
 
@@ -117,7 +117,7 @@ scripts/
 └─ import-excel.ts               # imperative importer (Supabase service-role)
 
 supabase/
-├─ migrations/                   # 0001 schema, 0002 RLS, 0003 seed function
+├─ migrations/                   # 0001 schema, 0002 RLS, 0003 seed tags, 0004 onboarding RPC
 └─ README.md                     # how to run the migrations
 
 docs/superpowers/

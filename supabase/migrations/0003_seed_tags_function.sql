@@ -1,12 +1,12 @@
 -- Helper to seed the standard set of tags for a freshly created household.
-create or replace function seed_default_tags(h_id uuid)
+create or replace function inpaklijst_seed_default_tags(h_id uuid)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
-  insert into tag (household_id, name, kind) values
+  insert into inpaklijst_tag (household_id, name, kind) values
     (h_id, 'citytrip',  'triptype'),
     (h_id, 'camper',    'triptype'),
     (h_id, 'tent',      'triptype'),
@@ -26,4 +26,4 @@ begin
 end;
 $$;
 
-grant execute on function seed_default_tags(uuid) to authenticated;
+grant execute on function inpaklijst_seed_default_tags(uuid) to authenticated;

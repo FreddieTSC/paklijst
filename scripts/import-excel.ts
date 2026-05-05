@@ -12,6 +12,7 @@ import { parseTemplateExcel } from './parse-excel';
 import { resolve } from 'node:path';
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import { T, RPC } from '../src/lib/db';
 
 const DEFAULT_EXCEL = 'C:/Users/tieme/Mijn Drive/LEISURE/REIZEN/meenemen op reis/template reis (version 2).xlsx';
 
@@ -44,13 +45,13 @@ async function main() {
   }
 
   console.log('\nSeeding default tags...');
-  const { error: seedErr } = await sb.rpc('seed_default_tags', { h_id: householdId });
+  const { error: seedErr } = await sb.rpc(RPC.seed_default_tags, { h_id: householdId });
   if (seedErr) throw seedErr;
 
   console.log('Inserting persons...');
   const personIdByName = new Map<string, string>();
   for (const p of plan.persons) {
-    const { data, error } = await sb.from('person')
+    const { data, error } = await sb.from(T.person)
       .insert({ household_id: householdId, name: p.name, is_child: p.is_child, user_id: null })
       .select('id').single();
     if (error) throw error;
@@ -70,7 +71,7 @@ async function main() {
       default_category: it.default_category,
       notes: null,
     }));
-    const { data, error } = await sb.from('item').insert(chunk).select('id,name,kind');
+    const { data, error } = await sb.from(T.item).insert(chunk).select('id,name,kind');
     if (error) throw error;
     for (const row of data!) {
       itemIdByKey.set(`${row.kind}::${row.name.toLowerCase()}`, row.id);
@@ -78,7 +79,7 @@ async function main() {
   }
 
   console.log('Loading tags...');
-  const { data: tags, error: tagsErr } = await sb.from('tag')
+  const { data: tags, error: tagsErr } = await sb.from(T.tag)
     .select('id,name').eq('household_id', householdId);
   if (tagsErr) throw tagsErr;
   const tagIdByName = new Map(tags!.map(t => [t.name, t.id]));
@@ -92,7 +93,7 @@ async function main() {
     })
     .filter((x): x is { item_id: string; tag_id: string } => Boolean(x));
   if (itemTagRows.length) {
-    const { error } = await sb.from('item_tag').insert(itemTagRows);
+    const { error } = await sb.from(T.item_tag).insert(itemTagRows);
     if (error) throw error;
   }
 
@@ -105,7 +106,7 @@ async function main() {
     })
     .filter((x): x is { item_id: string; person_id: string } => Boolean(x));
   if (ifpRows.length) {
-    const { error } = await sb.from('item_for_person').insert(ifpRows);
+    const { error } = await sb.from(T.item_for_person).insert(ifpRows);
     if (error) throw error;
   }
 
