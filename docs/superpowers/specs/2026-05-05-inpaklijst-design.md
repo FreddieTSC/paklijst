@@ -102,10 +102,15 @@ Vijf hoofdschermen:
 **Inpak-scherm (scherm 3):**
 - Bovenaan tabs: TODOs / Inpakken / Aandoen
 - Binnen "Inpakken": items gegroepeerd per categorie + per persoon (collapsible)
-- Elke regel: ☐ checkbox · itemnaam · ⓘ notitie/feedback · ✕ verwijderen
-- "+" knop: toevoegen uit bibliotheek (autocomplete) of nieuw item
-- Realtime: afvinken op andere telefoon = direct zichtbaar (avatar bij item)
-- "Reis afsluiten"-knop opent feedback-flow (zie §6)
+- Elke regel heeft drie zichtbare elementen:
+  - **Itemnaam** (links). Bij afgevinkt: `text-decoration: line-through` + lichtere kleur.
+  - **Groen vinkje-vakje** (✓): klik = afvinken (set `trip_item.checked=true`); klik nogmaals = uitvinken. Open vakje = nog te doen.
+  - **Rood kruisje-vakje** (✕, even groot als het vinkje): klik = item verwijderen uit deze reis (delete `trip_item`-rij; item zelf blijft in de bibliotheek bestaan). Bevestigingsmodal alleen bij `added_manually=false` (om te voorkomen dat een handmatig toegevoegd item per ongeluk wordt verwijderd, geen modal nodig).
+- Tap-area van beide vakjes minimaal 44×44px (mobile-friendly).
+- Notitie/feedback op item: tap op de itemnaam zelf opent een lichte popover (niet een vast icoon, om de regel rustig te houden).
+- "+" knop onderaan: toevoegen uit bibliotheek (autocomplete) of nieuw item.
+- Realtime: afvinken op andere telefoon = direct zichtbaar (avatar bij item).
+- "Reis afsluiten"-knop opent feedback-flow (zie §6).
 
 **Bibliotheek (scherm 4):**
 - Lijst met filterbalk (per tag, per persoon, per categorie)
