@@ -140,6 +140,43 @@ export function useRemoveTripItem(tripId: string) {
   });
 }
 
+export interface CloseTripVerdict {
+  item_id: string;
+  verdict: 'used' | 'unused' | 'missing';
+}
+
+export function useCloseTrip(tripId: string) {
+  const qc = useQueryClient();
+  const { data: hh } = useHousehold();
+  const householdId = hh?.household?.id;
+
+  return useMutation({
+    mutationFn: async ({ verdicts, context }: { verdicts: CloseTripVerdict[]; context: TripContext }) => {
+      const snapshot = context as unknown as Trip['context'];
+      if (verdicts.length) {
+        const rows = verdicts.map(v => ({
+          trip_id: tripId,
+          item_id: v.item_id,
+          verdict: v.verdict,
+          context_snapshot: snapshot,
+        }));
+        const chunk = 100;
+        for (let i = 0; i < rows.length; i += chunk) {
+          const { error } = await supabase.from(T.trip_feedback).insert(rows.slice(i, i + chunk));
+          if (error) throw error;
+        }
+      }
+      const { error } = await supabase.from(T.trip).update({ status: 'closed' }).eq('id', tripId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['trip', tripId] });
+      qc.invalidateQueries({ queryKey: ['trips', householdId] });
+      qc.invalidateQueries({ queryKey: ['trip_feedback_all', householdId] });
+    },
+  });
+}
+
 export function useAddTripItem(tripId: string) {
   const qc = useQueryClient();
   return useMutation({

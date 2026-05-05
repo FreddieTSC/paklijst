@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTrip, useToggleTripItem, useRemoveTripItem } from '@/hooks/useTrips';
 import { usePersons } from '@/hooks/usePersons';
 import { ItemRow } from './components/ItemRow';
 import { AddItemPopover } from './components/AddItemPopover';
+import { CloseTripModal } from './components/CloseTripModal';
 import type { Category, TripItem, Item } from '@/lib/types';
 
 type Tab = 'pack' | 'todo' | 'wear';
@@ -22,12 +23,14 @@ const CATEGORY_ORDER: Category[] = ['stuff','kleren','pharmacie','electronica','
 
 export function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
+  const nav = useNavigate();
   const { data, isLoading } = useTrip(tripId);
   const { data: persons = [] } = usePersons();
   const toggle = useToggleTripItem(tripId!);
   const remove = useRemoveTripItem(tripId!);
   const [tab, setTab] = useState<Tab>('pack');
   const [adding, setAdding] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const personById = useMemo(() => new Map(persons.map(p => [p.id, p])), [persons]);
 
@@ -50,7 +53,14 @@ export function TripDetailPage() {
       <header className="border-b border-rule pb-6">
         <div className="flex items-baseline justify-between gap-4">
           <Link to="/trips" className="text-eyebrow text-muted hover:text-ink">← Reizen</Link>
-          <span className="text-eyebrow text-muted">{trip.status}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-eyebrow text-muted">{trip.status}</span>
+            {trip.status !== 'closed' && (
+              <button onClick={() => setClosing(true)} className="text-eyebrow text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
+                Reis afsluiten
+              </button>
+            )}
+          </div>
         </div>
         <h1 className="mt-3 text-h1 font-semibold tracking-tight">{trip.name}</h1>
         <div className="mt-2 flex items-center gap-4 text-sm text-muted num">
@@ -105,6 +115,15 @@ export function TripDetailPage() {
             tripId={tripId!}
             onClose={() => setAdding(false)}
             existingItemIds={new Set(items.map(i => i.item_id))}
+          />
+        )}
+        {closing && (
+          <CloseTripModal
+            tripId={tripId!}
+            context={trip.context}
+            items={items}
+            onClose={() => setClosing(false)}
+            onClosed={() => { setClosing(false); nav('/trips'); }}
           />
         )}
       </AnimatePresence>
