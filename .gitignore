@@ -1,4 +1,7 @@
 .superpowers/
 node_modules/
-package-lock.json
-package.json
+dist/
+.env
+.env.local
+.DS_Store
+*.log

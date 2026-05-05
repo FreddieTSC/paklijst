@@ -1,0 +1,66 @@
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root { height: 100%; }
+  html { font-family: 'Geist Variable', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { @apply bg-paper text-ink; font-feature-settings: 'ss01', 'cv11'; }
+
+  ::selection { background: #1a1f1c; color: #f5f3ee; }
+
+  button { -webkit-tap-highlight-color: transparent; }
+  input, textarea, select { font-family: inherit; }
+}
+
+@layer components {
+  .eyebrow { @apply text-eyebrow uppercase tracking-[0.12em] text-muted font-medium; }
+  .rule { @apply border-b border-rule; }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2.5
+           text-sm font-medium tracking-tight rounded-md
+           transition-all duration-200 ease-spring
+           active:scale-[0.97];
+  }
+  .btn-primary {
+    @apply btn bg-ink text-paper hover:bg-accent;
+  }
+  .btn-ghost {
+    @apply btn text-ink hover:bg-paperX;
+  }
+  .btn-danger {
+    @apply btn bg-accent2/10 text-accent2 hover:bg-accent2 hover:text-paper;
+  }
+
+  .input {
+    @apply w-full px-3 py-2.5 text-[15px] bg-white
+           border border-rule rounded-md
+           placeholder:text-muted/70
+           focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/10
+           transition-colors;
+  }
+
+  .chip {
+    @apply inline-flex items-center px-3 py-1.5 text-[13px] font-medium tracking-tight
+           border border-rule rounded-md bg-white text-ink
+           cursor-pointer select-none
+           transition-all duration-150 ease-spring
+           hover:border-ink/40 active:scale-[0.96];
+  }
+  .chip-on {
+    @apply bg-ink text-paper border-ink;
+  }
+
+  .card {
+    @apply bg-white rounded-md border border-rule shadow-card;
+  }
+}
+
+@layer utilities {
+  .num { font-feature-settings: 'tnum', 'ss01'; }
+  .text-balance { text-wrap: balance; }
+}
