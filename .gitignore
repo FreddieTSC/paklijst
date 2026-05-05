@@ -15,3 +15,5 @@ dist/
 # Generated import artifacts (contain private household data — never commit)
 scripts/import-output.json
 scripts/import.sql
+scripts/items.json
+scripts/library-dump.md

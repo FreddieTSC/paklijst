@@ -29,6 +29,7 @@ export function ItemEditor({ item, onClose }: { item?: ItemWithRelations; onClos
     default_category: (item?.default_category ?? 'stuff') as Category,
     wear_on_travel: item?.wear_on_travel ?? false,
     notes: item?.notes ?? '',
+    qty: item?.qty ?? 1,
     tag_ids: item?.tag_ids ?? [],
     person_ids: item?.person_ids ?? [],
   });
@@ -80,8 +81,8 @@ export function ItemEditor({ item, onClose }: { item?: ItemWithRelations; onClos
           <input className="input" value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} autoFocus />
         </label>
 
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
+        <div className="grid grid-cols-3 gap-3">
+          <label className="block col-span-2">
             <span className="block text-eyebrow mb-2">Soort</span>
             <div className="flex gap-2">
               {(['packable','todo'] as ItemKind[]).map(k => (
@@ -93,7 +94,15 @@ export function ItemEditor({ item, onClose }: { item?: ItemWithRelations; onClos
               ))}
             </div>
           </label>
-          <label className="block">
+          {draft.kind === 'packable' && (
+            <label className="block">
+              <span className="block text-eyebrow mb-2">Aantal</span>
+              <input type="number" min={1} max={99} className="input num text-center"
+                     value={draft.qty}
+                     onChange={e => setDraft({ ...draft, qty: Math.max(1, parseInt(e.target.value) || 1) })} />
+            </label>
+          )}
+          <label className="block col-span-3">
             <span className="block text-eyebrow mb-2">Categorie</span>
             <select className="input" value={draft.default_category}
                     onChange={e => setDraft({ ...draft, default_category: e.target.value as Category })}>

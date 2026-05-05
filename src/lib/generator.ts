@@ -14,7 +14,7 @@
 
 export const UNUSED_FILTER_THRESHOLD = 3;
 
-export interface GenItem  { id: string; name: string; kind: 'packable' | 'todo'; default_category: string; }
+export interface GenItem  { id: string; name: string; kind: 'packable' | 'todo'; default_category: string; qty?: number; }
 export interface GenTag   { id: string; name: string; kind: 'triptype' | 'weather' | 'activity' | 'custom'; }
 export interface GenItemTag       { item_id: string; tag_id: string; }
 export interface GenItemForPerson { item_id: string; person_id: string; }
@@ -41,7 +41,7 @@ export interface Context {
   activities: string[];
 }
 
-export interface TripItemDraft { item_id: string; person_id?: string; }
+export interface TripItemDraft { item_id: string; person_id?: string; qty: number; }
 
 export function generateTripItems(lib: Library, ctx: Context): TripItemDraft[] {
   const tagByName = new Map(lib.tags.map(t => [t.name, t]));
@@ -66,12 +66,13 @@ export function generateTripItems(lib: Library, ctx: Context): TripItemDraft[] {
     if (!(tagMatch || personMatch || alwaysMeename)) continue;
     if (countUnusedInContext(lib.feedback, item.id, ctx) >= UNUSED_FILTER_THRESHOLD) continue;
 
+    const qty = item.qty ?? 1;
     if (itemPersons.size > 0) {
       for (const pid of itemPersons) {
-        if (ctx.persons.includes(pid)) drafts.push({ item_id: item.id, person_id: pid });
+        if (ctx.persons.includes(pid)) drafts.push({ item_id: item.id, person_id: pid, qty });
       }
     } else {
-      drafts.push({ item_id: item.id });
+      drafts.push({ item_id: item.id, qty });
     }
   }
   return drafts;

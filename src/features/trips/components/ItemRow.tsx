@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'motion/react';
 
 interface Props {
   name: string;
+  qty?: number;
   checked: boolean;
   addedManually: boolean;
   badge?: string | null;          // e.g. "AANDOEN"
@@ -10,7 +11,7 @@ interface Props {
   onRemove: () => void;
 }
 
-export function ItemRow({ name, checked, addedManually, badge, onToggle, onRemove }: Props) {
+export function ItemRow({ name, qty, checked, addedManually, badge, onToggle, onRemove }: Props) {
   const [confirming, setConfirming] = useState(false);
   const tRef = useRef<number | null>(null);
   const reduce = useReducedMotion();
@@ -36,6 +37,9 @@ export function ItemRow({ name, checked, addedManually, badge, onToggle, onRemov
         <div className={`text-[15px] tracking-tight transition-colors duration-300
                          ${checked ? 'line-through text-muted' : 'text-ink'}`}>
           {name}
+          {qty && qty > 1 && (
+            <span className={`num ml-2 text-sm ${checked ? 'text-muted' : 'text-muted'}`}>× {qty}</span>
+          )}
         </div>
         {badge && <div className="mt-0.5 text-[10px] uppercase tracking-wider text-flag">{badge}</div>}
       </div>

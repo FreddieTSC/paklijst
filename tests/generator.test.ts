@@ -41,7 +41,7 @@ describe('generateTripItems', () => {
       itemForPerson: [{ item_id: 'i1', person_id: 'p1' }],
     };
     const out = generateTripItems(lib, { persons: ['p1'], triptypes: [], weather: [], activities: [] });
-    expect(out).toEqual([{ item_id: 'i1', person_id: 'p1' }]);
+    expect(out).toEqual([{ item_id: 'i1', person_id: 'p1', qty: 1 }]);
   });
 
   it('emits one draft per matched person for shared person-bound items', () => {

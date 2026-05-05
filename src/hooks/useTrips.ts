@@ -69,6 +69,7 @@ export function useCreateTrip() {
           person_id: d.person_id ?? null,
           checked: false,
           added_manually: false,
+          qty: Math.max(1, Math.floor(d.qty ?? 1)),
         }));
         // chunk to avoid payload limits
         const chunk = 100;

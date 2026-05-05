@@ -56,7 +56,7 @@ export function TripCompositorPage() {
   }), [selPersons, selTriptypes, selWeather, selActivities, triptypeTags, weatherTags, activityTags, customTags]);
 
   const lib: Library = useMemo(() => ({
-    items: items.map(i => ({ id: i.id, name: i.name, kind: i.kind, default_category: i.default_category })),
+    items: items.map(i => ({ id: i.id, name: i.name, kind: i.kind, default_category: i.default_category, qty: i.qty })),
     tags: tags.map(t => ({ id: t.id, name: t.name, kind: t.kind })),
     itemTags: items.flatMap(i => i.tag_ids.map(tag_id => ({ item_id: i.id, tag_id }))),
     itemForPerson: items.flatMap(i => i.person_ids.map(person_id => ({ item_id: i.id, person_id }))),

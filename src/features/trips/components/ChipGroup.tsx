@@ -1,3 +1,5 @@
+import { iconFor } from '@/lib/tagIcons';
+
 interface Option { id: string; label: string; }
 
 interface Props {
@@ -21,9 +23,11 @@ export function ChipGroup({ eyebrow, title, options, selected, onToggle }: Props
           ? <span className="text-sm text-muted italic">geen opties</span>
           : options.map(opt => {
             const on = selected.includes(opt.id);
+            const icon = iconFor(opt.label);
             return (
               <button key={opt.id} type="button" onClick={() => onToggle(opt.id)}
                       className={`chip ${on ? 'chip-on' : ''}`}>
+                {icon && <span className="mr-1.5 text-base leading-none">{icon}</span>}
                 {opt.label}
               </button>
             );

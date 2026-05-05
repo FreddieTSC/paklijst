@@ -87,9 +87,15 @@ export function TripDetailPage() {
       <div className="space-y-8">
         {visible.length === 0
           ? <p className="text-sm text-muted">Niets in dit tabblad.</p>
-          : groupByCategory(visible, tab).map(group => (
+          : groupByCategory(visible, tab).map(group => {
+            const allRows = group.byPerson.flatMap(g => g.rows);
+            const checkedCount = allRows.filter(r => r.checked).length;
+            return (
             <section key={group.category}>
-              <p className="eyebrow mb-2 px-1">{CATEGORY_LABEL[group.category]}</p>
+              <div className="flex items-baseline justify-between mb-2 px-1">
+                <p className="eyebrow">{CATEGORY_LABEL[group.category]}</p>
+                <p className="text-eyebrow text-muted num">{checkedCount}/{allRows.length}</p>
+              </div>
               <div className="card overflow-hidden">
                 {/* Within-category: sub-group by person if applicable */}
                 {group.byPerson.length === 1 && group.byPerson[0].personId === null
@@ -105,7 +111,8 @@ export function TripDetailPage() {
                 }
               </div>
             </section>
-          ))
+          );
+          })
         }
       </div>
 
@@ -135,6 +142,7 @@ export function TripDetailPage() {
       <ItemRow
         key={it.id}
         name={it.item.name}
+        qty={it.qty}
         checked={it.checked}
         addedManually={it.added_manually}
         badge={it.item.wear_on_travel && tab === 'wear' ? null : (it.item.wear_on_travel ? 'AANDOEN' : null)}
