@@ -106,6 +106,22 @@ export function useUpsertItem() {
   });
 }
 
+export function useRenameItem() {
+  const qc = useQueryClient();
+  const { data: hh } = useHousehold();
+  const householdId = hh?.household?.id;
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await supabase.from(T.item).update({ name }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['items', householdId] });
+      qc.invalidateQueries({ predicate: q => q.queryKey[0] === 'trip' });
+    },
+  });
+}
+
 export function useDeleteItem() {
   const qc = useQueryClient();
   const { data: hh } = useHousehold();

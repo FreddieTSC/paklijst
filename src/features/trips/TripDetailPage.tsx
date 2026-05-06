@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTrip, useToggleTripItem, useRemoveTripItem, useDuplicateTrip, useUpdateTrip } from '@/hooks/useTrips';
+import { useRenameItem } from '@/hooks/useItems';
 import { usePersons } from '@/hooks/usePersons';
 import { useRealtimeTrip } from '@/hooks/useRealtimeTrip';
 import { ItemRow } from './components/ItemRow';
@@ -33,6 +34,7 @@ export function TripDetailPage() {
   const remove = useRemoveTripItem(tripId!);
   const duplicate = useDuplicateTrip();
   const updateTrip = useUpdateTrip();
+  const renameItem = useRenameItem();
   const [tab, setTab] = useState<Tab>('pack');
   const [adding, setAdding] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -186,6 +188,7 @@ export function TripDetailPage() {
         badge={it.item.wear_on_travel && tab === 'wear' ? null : (it.item.wear_on_travel ? 'AANDOEN' : null)}
         onToggle={() => toggle.mutate({ id: it.id, checked: !it.checked })}
         onRemove={() => remove.mutate(it.id)}
+        onRename={(newName) => renameItem.mutate({ id: it.item_id, name: newName })}
       />
     ));
   }
