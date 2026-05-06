@@ -1,10 +1,8 @@
 import { useState, type FormEvent } from 'react';
-import { useAuth, signOut } from '@/hooks/useAuth';
 import { useHousehold } from '@/hooks/useHousehold';
 import { usePersons, useCreatePerson, useDeletePerson } from '@/hooks/usePersons';
 
 export function ProfilePage() {
-  const { user } = useAuth();
   const { data: hh } = useHousehold();
   const { data: persons = [] } = usePersons();
   const createPerson = useCreatePerson();
@@ -24,19 +22,8 @@ export function ProfilePage() {
     <div className="space-y-10">
       <header className="border-b border-rule pb-6">
         <p className="eyebrow">N° 05 · Profiel</p>
-        <h1 className="text-h1 font-semibold mt-2 tracking-tight">Account &amp; huishouden.</h1>
+        <h1 className="text-h1 font-semibold mt-2 tracking-tight">Huishouden.</h1>
       </header>
-
-      <section className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 md:col-span-4">
-          <p className="eyebrow mb-2">Account</p>
-        </div>
-        <div className="col-span-12 md:col-span-8 card p-5">
-          <p className="text-sm text-muted">Email</p>
-          <p className="mt-0.5 font-medium">{user?.email}</p>
-          <button onClick={() => signOut()} className="btn-ghost mt-4">Uitloggen</button>
-        </div>
-      </section>
 
       <section className="grid grid-cols-12 gap-6">
         <div className="col-span-12 md:col-span-4">
@@ -45,8 +32,6 @@ export function ProfilePage() {
         <div className="col-span-12 md:col-span-8 card p-5">
           <p className="text-sm text-muted">Naam</p>
           <p className="mt-0.5 font-medium">{hh?.household?.name}</p>
-          <p className="mt-3 text-sm text-muted">Jouw rol</p>
-          <p className="mt-0.5 font-medium capitalize">{hh?.member?.role}</p>
         </div>
       </section>
 

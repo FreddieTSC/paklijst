@@ -8,31 +8,45 @@ export interface AuthState {
   loading: boolean;
 }
 
+const AUTO_EMAIL = 'tiemen@namibia.app';
+const AUTO_PW = 'inpaklijst2024';
+
 export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>({ user: null, session: null, loading: true });
 
   useEffect(() => {
     let alive = true;
-    supabase.auth.getSession().then(({ data }) => {
+
+    async function init() {
+      const { data } = await supabase.auth.getSession();
       if (!alive) return;
-      setState({ session: data.session, user: data.session?.user ?? null, loading: false });
-    });
+
+      if (data.session) {
+        setState({ session: data.session, user: data.session.user, loading: false });
+        return;
+      }
+
+      const { data: signInData } = await supabase.auth.signInWithPassword({
+        email: AUTO_EMAIL,
+        password: AUTO_PW,
+      });
+      if (!alive) return;
+      setState({
+        session: signInData.session,
+        user: signInData.session?.user ?? null,
+        loading: false,
+      });
+    }
+
+    init();
+
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
       if (!alive) return;
       setState({ session, user: session?.user ?? null, loading: false });
     });
+
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
 
   return state;
-}
-
-export async function signIn(email: string, password: string) {
-  return supabase.auth.signInWithPassword({ email, password });
-}
-export async function signUp(email: string, password: string) {
-  return supabase.auth.signUp({ email, password });
-}
-export async function signOut() {
-  return supabase.auth.signOut();
 }

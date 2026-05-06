@@ -1,5 +1,4 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { signOut } from '@/hooks/useAuth';
 import { useHousehold } from '@/hooks/useHousehold';
 
 const NAV = [
@@ -43,9 +42,6 @@ export function Layout() {
             <div>{hh?.household?.name ?? 'Huishouden'}</div>
             <div className="mt-1">{hh?.member?.display_name}</div>
           </div>
-          <button onClick={() => signOut()} className="mt-12 text-xs text-muted hover:text-accent2 underline decoration-rule underline-offset-4">
-            Uitloggen
-          </button>
         </aside>
 
         {/* Mobile masthead */}
