@@ -96,6 +96,9 @@ export function TripDetailPage() {
                 Afsluiten
               </button>
             )}
+            <Link to="/library" className="text-eyebrow text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
+              Bibliotheek
+            </Link>
           </div>
         </div>
 
