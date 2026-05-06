@@ -5,6 +5,7 @@ import { useTrip, useToggleTripItem, useRemoveTripItem, useDuplicateTrip, useUpd
 import { useRenameItem } from '@/hooks/useItems';
 import { usePersons } from '@/hooks/usePersons';
 import { useRealtimeTrip } from '@/hooks/useRealtimeTrip';
+import { iconFor } from '@/lib/tagIcons';
 import { ItemRow } from './components/ItemRow';
 import { AddItemPopover } from './components/AddItemPopover';
 import { CloseTripModal } from './components/CloseTripModal';
@@ -196,16 +197,57 @@ export function TripDetailPage() {
         </div>
       </header>
 
-      {/* Tabs — scrollable like Excel sheet tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
-        {tabs.map(t => <TabChip key={t.id} tab={t} active={validTab === t.id} onClick={() => { setActiveTab(t.id); setSearch(''); }} />)}
-        {tagTabs.length > 0 && <span className="shrink-0 w-px h-5 bg-rule mx-1" />}
-        {tagTabs.map(t => <TabChip key={t.id} tab={t} active={validTab === t.id} onClick={() => { setActiveTab(t.id); setSearch(''); }} />)}
-        {personTabs.length > 0 && <span className="shrink-0 w-px h-5 bg-rule mx-1" />}
-        {personTabs.map(t => <TabChip key={t.id} tab={t} active={validTab === t.id} onClick={() => { setActiveTab(t.id); setSearch(''); }} />)}
+      {/* Filters — library-style chip groups */}
+      <div className="space-y-3">
+        <div>
+          <p className="text-eyebrow mb-1.5">Categorie</p>
+          <div className="flex flex-wrap gap-1.5">
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => { setActiveTab(t.id); setSearch(''); }}
+                className={`chip ${validTab === t.id ? 'chip-on' : ''}`}>
+                {t.label}
+                <span className={`ml-1 text-[11px] num ${validTab === t.id ? 'text-paper/70' : 'text-muted'}`}>{t.checked}/{t.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        {tagTabs.length > 0 && (
+          <div>
+            <p className="text-eyebrow mb-1.5">Tag</p>
+            <div className="flex flex-wrap gap-1.5">
+              {tagTabs.map(t => {
+                const tagId = t.id.replace('tag-', '');
+                const tag = tagsById.get(tagId);
+                const icon = tag ? iconFor(tag.name) : null;
+                return (
+                  <button key={t.id} onClick={() => { setActiveTab(t.id); setSearch(''); }}
+                    className={`chip ${validTab === t.id ? 'chip-on' : ''}`}>
+                    {icon && <span className="mr-1.5 text-base leading-none">{icon}</span>}
+                    {t.label}
+                    <span className={`ml-1 text-[11px] num ${validTab === t.id ? 'text-paper/70' : 'text-muted'}`}>{t.checked}/{t.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {personTabs.length > 0 && (
+          <div>
+            <p className="text-eyebrow mb-1.5">Persoon</p>
+            <div className="flex flex-wrap gap-1.5">
+              {personTabs.map(t => (
+                <button key={t.id} onClick={() => { setActiveTab(t.id); setSearch(''); }}
+                  className={`chip ${validTab === t.id ? 'chip-on' : ''}`}>
+                  {t.label}
+                  <span className={`ml-1 text-[11px] num ${validTab === t.id ? 'text-paper/70' : 'text-muted'}`}>{t.checked}/{t.count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button onClick={() => setAdding(true)}
-                className="shrink-0 px-3 py-1.5 rounded-md text-sm text-muted hover:text-ink hover:bg-rule transition-colors">
-          + Item
+                className="chip hover:border-accent hover:text-accent">
+          + Item toevoegen
         </button>
       </div>
 
@@ -263,26 +305,6 @@ export function TripDetailPage() {
   );
 }
 
-function TabChip({ tab, active, onClick }: {
-  tab: { label: string; count: number; checked: number };
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap
-                  ${active
-                    ? 'bg-ink text-paper font-medium'
-                    : 'bg-rule/50 text-muted hover:text-ink hover:bg-rule'}`}
-    >
-      {tab.label}
-      <span className={`ml-1 text-xs num ${active ? 'text-paper/70' : 'text-muted'}`}>
-        {tab.checked}/{tab.count}
-      </span>
-    </button>
-  );
-}
 
 function EditTripForm({ trip, onSave, onCancel }: {
   trip: Trip;
