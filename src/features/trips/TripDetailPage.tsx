@@ -129,14 +129,17 @@ export function TripDetailPage() {
                 {/* Within-category: sub-group by person if applicable */}
                 {group.byPerson.length === 1 && group.byPerson[0].personId === null
                   ? renderRows(group.byPerson[0].rows)
-                  : group.byPerson.map(sub => (
-                    <div key={sub.personId ?? 'shared'}>
-                      <div className="px-4 py-2 bg-paper border-b border-rule text-eyebrow text-muted">
-                        {sub.personId ? personById.get(sub.personId)?.name ?? 'Persoon' : 'Gedeeld'}
+                  : group.byPerson.map(sub => {
+                    const pName = sub.personId ? personById.get(sub.personId)?.name ?? 'Persoon' : null;
+                    return (
+                      <div key={sub.personId ?? 'shared'}>
+                        <div className="px-4 py-2 bg-paper border-b border-rule text-eyebrow text-muted">
+                          {pName ?? 'Gedeeld'}
+                        </div>
+                        {renderRows(sub.rows, pName)}
                       </div>
-                      {renderRows(sub.rows)}
-                    </div>
-                  ))
+                    );
+                  })
                 }
               </div>
             </section>
@@ -166,7 +169,7 @@ export function TripDetailPage() {
     </div>
   );
 
-  function renderRows(rows: (TripItem & { item: Item })[]) {
+  function renderRows(rows: (TripItem & { item: Item })[], personName?: string | null) {
     return rows.map(it => (
       <ItemRow
         key={it.id}
@@ -174,6 +177,7 @@ export function TripDetailPage() {
         qty={it.qty}
         checked={it.checked}
         addedManually={it.added_manually}
+        personName={personName}
         badge={it.item.wear_on_travel && tab === 'wear' ? null : (it.item.wear_on_travel ? 'AANDOEN' : null)}
         onToggle={() => toggle.mutate({ id: it.id, checked: !it.checked })}
         onRemove={() => remove.mutate(it.id)}

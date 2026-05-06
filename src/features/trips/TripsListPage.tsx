@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useTrips, useDuplicateTrip } from '@/hooks/useTrips';
+import { useTrips, useDuplicateTrip, useUpdateTrip, useDeleteTrip } from '@/hooks/useTrips';
 import type { Trip, TripStatus } from '@/lib/types';
 
 const STATUS_LABEL: Record<TripStatus, string> = {
@@ -12,6 +12,8 @@ export function TripsListPage() {
   const { data: trips = [], isLoading } = useTrips();
   const nav = useNavigate();
   const duplicate = useDuplicateTrip();
+  const updateTrip = useUpdateTrip();
+  const deleteTrip = useDeleteTrip();
 
   const grouped: Record<TripStatus, Trip[]> = { active: [], planning: [], closed: [] };
   for (const t of trips) grouped[t.status].push(t);
@@ -49,10 +51,16 @@ export function TripsListPage() {
             {grouped[status].map((t, idx) => (
               <li key={t.id}
                   className={`col-span-12 ${idx % 5 === 0 ? 'md:col-span-7' : 'md:col-span-5'}`}>
-                <TripCard trip={t} onDuplicate={async () => {
-                  const trip = await duplicate.mutateAsync(t.id);
-                  nav(`/trips/${trip.id}`);
-                }} />
+                <TripCard trip={t}
+                  onDuplicate={async () => {
+                    const trip = await duplicate.mutateAsync(t.id);
+                    nav(`/trips/${trip.id}`);
+                  }}
+                  onClose={() => updateTrip.mutate({ tripId: t.id, status: 'closed' })}
+                  onDelete={() => {
+                    if (window.confirm(`"${t.name}" definitief verwijderen?`)) deleteTrip.mutate(t.id);
+                  }}
+                />
               </li>
             ))}
           </ul>
@@ -62,9 +70,15 @@ export function TripsListPage() {
   );
 }
 
-function TripCard({ trip, onDuplicate }: { trip: Trip; onDuplicate: () => void }) {
+function TripCard({ trip, onDuplicate, onClose, onDelete }: {
+  trip: Trip;
+  onDuplicate: () => void;
+  onClose: () => void;
+  onDelete: () => void;
+}) {
   const ctx = trip.context;
   const tags = [...(ctx.triptypes ?? []), ...(ctx.weather ?? []), ...(ctx.activities ?? [])];
+  const linkCls = "text-xs text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink transition-colors";
   return (
     <div className="card group hover:border-ink/40 transition-colors relative">
       <Link to={`/trips/${trip.id}`} className="block p-5">
@@ -86,11 +100,21 @@ function TripCard({ trip, onDuplicate }: { trip: Trip; onDuplicate: () => void }
           </div>
         )}
       </Link>
-      <div className="px-5 pb-4 pt-0">
-        <button onClick={e => { e.stopPropagation(); onDuplicate(); }}
-                className="text-xs text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink transition-colors">
+      <div className="px-5 pb-4 pt-0 flex items-center gap-4">
+        <button onClick={e => { e.stopPropagation(); onDuplicate(); }} className={linkCls}>
           Dupliceer reis
         </button>
+        {trip.status !== 'closed' && (
+          <button onClick={e => { e.stopPropagation(); onClose(); }} className={linkCls}>
+            Verplaats naar afgerond
+          </button>
+        )}
+        {trip.status === 'closed' && (
+          <button onClick={e => { e.stopPropagation(); onDelete(); }}
+                  className="text-xs text-muted hover:text-accent2 underline decoration-rule underline-offset-4 hover:decoration-accent2 transition-colors">
+            Verwijder reis
+          </button>
+        )}
       </div>
     </div>
   );

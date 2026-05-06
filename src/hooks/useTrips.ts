@@ -252,6 +252,22 @@ export function useUpdateTrip() {
   });
 }
 
+export function useDeleteTrip() {
+  const qc = useQueryClient();
+  const { data: hh } = useHousehold();
+  const householdId = hh?.household?.id;
+
+  return useMutation({
+    mutationFn: async (tripId: string) => {
+      const { error } = await supabase.from(T.trip).delete().eq('id', tripId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['trips', householdId] });
+    },
+  });
+}
+
 export function useAddTripItem(tripId: string) {
   const qc = useQueryClient();
   return useMutation({
