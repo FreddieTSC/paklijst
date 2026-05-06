@@ -37,6 +37,7 @@ export function TripDetailPage() {
   const [adding, setAdding] = useState(false);
   const [closing, setClosing] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [search, setSearch] = useState('');
 
   const personById = useMemo(() => new Map(persons.map(p => [p.id, p])), [persons]);
 
@@ -48,7 +49,11 @@ export function TripDetailPage() {
   const todoItems  = items.filter(i => i.item.kind === 'todo');
   const wearItems  = items.filter(i => i.item.kind === 'packable' && i.item.wear_on_travel);
   const packItems  = items.filter(i => i.item.kind === 'packable' && !i.item.wear_on_travel);
-  const visible = tab === 'pack' ? packItems : tab === 'todo' ? todoItems : wearItems;
+  const visibleAll = tab === 'pack' ? packItems : tab === 'todo' ? todoItems : wearItems;
+  const searchTerm = search.trim().toLowerCase();
+  const visible = searchTerm
+    ? visibleAll.filter(i => i.item.name.toLowerCase().includes(searchTerm))
+    : visibleAll;
 
   const totalChecked = items.filter(i => i.checked).length;
   const totalCount = items.length;
@@ -110,7 +115,7 @@ export function TripDetailPage() {
         <button onClick={() => setAdding(true)} className="btn-ghost mb-2 text-sm">+ Item</button>
       </div>
 
-      <QuickAddBar tripId={tripId!} existingItemIds={new Set(items.map(i => i.item_id))} />
+      <QuickAddBar tripId={tripId!} existingItemIds={new Set(items.map(i => i.item_id))} search={search} onSearchChange={setSearch} />
 
       {/* List body — split by category, with per-person grouping inside */}
       <div className="space-y-8">

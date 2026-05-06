@@ -5,26 +5,27 @@ import { useAddTripItem } from '@/hooks/useTrips';
 interface Props {
   tripId: string;
   existingItemIds: Set<string>;
+  search: string;
+  onSearchChange: (v: string) => void;
 }
 
-export function QuickAddBar({ tripId, existingItemIds }: Props) {
+export function QuickAddBar({ tripId, existingItemIds, search, onSearchChange }: Props) {
   const { data: items = [] } = useItems();
   const add = useAddTripItem(tripId);
-  const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
 
-  const matches = useMemo(() => {
-    const term = q.trim().toLowerCase();
+  const suggestions = useMemo(() => {
+    const term = search.trim().toLowerCase();
     if (!term) return [];
     return items
       .filter(i => i.name.toLowerCase().includes(term))
       .filter(i => !existingItemIds.has(i.id))
       .slice(0, 6);
-  }, [q, items, existingItemIds]);
+  }, [search, items, existingItemIds]);
 
   async function pick(itemId: string) {
     await add.mutateAsync({ item_id: itemId });
-    setQ('');
+    onSearchChange('');
     setOpen(false);
   }
 
@@ -32,18 +33,16 @@ export function QuickAddBar({ tripId, existingItemIds }: Props) {
     <div className="relative">
       <input
         className="input"
-        placeholder="+ snel toevoegen…  (zoek of typ een nieuw item)"
-        value={q}
-        onChange={e => { setQ(e.target.value); setOpen(true); }}
+        placeholder="Zoek in lijst of voeg toe…"
+        value={search}
+        onChange={e => { onSearchChange(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
       />
-      {open && q.trim() && (
+      {open && search.trim() && suggestions.length > 0 && (
         <ul className="absolute z-30 left-0 right-0 mt-1 bg-white border border-rule rounded-md shadow-card divide-y divide-rule overflow-hidden">
-          {matches.length === 0 && (
-            <li className="px-3 py-2 text-sm text-muted italic">Geen match — open <span className="text-ink">+ Item</span> om een nieuw bibliotheekitem te maken.</li>
-          )}
-          {matches.map(i => (
+          <li className="px-3 py-1.5 text-[11px] text-muted uppercase tracking-wide bg-paper">Toevoegen aan reis</li>
+          {suggestions.map(i => (
             <li key={i.id}>
               <button onMouseDown={e => e.preventDefault()} onClick={() => pick(i.id)}
                       className="w-full text-left px-3 py-2 hover:bg-paper transition-colors flex items-center justify-between gap-3">
