@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { T } from '@/lib/db';
 import { useHousehold } from './useHousehold';
-import type { Trip, TripContext, TripItem, Item } from '@/lib/types';
+import type { Trip, TripContext, TripItem, Item, Tag, ItemTag } from '@/lib/types';
 import type { TripItemDraft } from '@/lib/generator';
 
 export function useTrips() {
@@ -22,7 +22,12 @@ export function useTrips() {
 }
 
 export function useTrip(tripId: string | undefined) {
-  return useQuery<{ trip: Trip; items: (TripItem & { item: Item })[] } | null>({
+  return useQuery<{
+    trip: Trip;
+    items: (TripItem & { item: Item })[];
+    tagsByItemId: Map<string, string[]>;
+    tagsById: Map<string, Tag>;
+  } | null>({
     queryKey: ['trip', tripId],
     enabled: !!tripId,
     queryFn: async () => {
@@ -32,7 +37,32 @@ export function useTrip(tripId: string | undefined) {
       const { data: items, error: iErr } = await supabase.from(T.trip_item)
         .select(`*, item:${T.item}(*)`).eq('trip_id', tripId!);
       if (iErr) throw iErr;
-      return { trip, items: (items as unknown as (TripItem & { item: Item })[]) ?? [] };
+
+      const itemIds = (items ?? []).map((i: any) => i.item_id);
+      const tagsByItemId = new Map<string, string[]>();
+      const tagsById = new Map<string, Tag>();
+
+      if (itemIds.length > 0) {
+        const { data: itemTags } = await supabase.from(T.item_tag)
+          .select('*').in('item_id', itemIds);
+        const tagIds = [...new Set((itemTags ?? []).map((it: any) => it.tag_id))];
+        if (tagIds.length > 0) {
+          const { data: tags } = await supabase.from(T.tag).select('*').in('id', tagIds);
+          for (const tag of (tags ?? []) as Tag[]) tagsById.set(tag.id, tag);
+        }
+        for (const it of (itemTags ?? []) as ItemTag[]) {
+          const arr = tagsByItemId.get(it.item_id) ?? [];
+          arr.push(it.tag_id);
+          tagsByItemId.set(it.item_id, arr);
+        }
+      }
+
+      return {
+        trip,
+        items: (items as unknown as (TripItem & { item: Item })[]) ?? [],
+        tagsByItemId,
+        tagsById,
+      };
     },
   });
 }
