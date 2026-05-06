@@ -10,20 +10,18 @@ import { ItemRow } from './components/ItemRow';
 import { AddItemPopover } from './components/AddItemPopover';
 import { CloseTripModal } from './components/CloseTripModal';
 import { QuickAddBar } from './components/QuickAddBar';
-import type { Category, Trip, TripItem, Item } from '@/lib/types';
+import type { Category, Trip } from '@/lib/types';
 
-const CATEGORY_LABEL: Record<Category, string> = {
-  todo: 'Todo',
-  stuff: 'Stuff',
-  kleren: 'Kleren',
-  eten: 'Eten',
-  electronica: 'Electronica',
-  pharmacie: 'Pharmacie',
-  spelletjes: 'Spelletjes',
-};
-const CATEGORY_ORDER: Category[] = ['todo', 'stuff', 'eten', 'electronica', 'pharmacie', 'spelletjes', 'kleren'];
-
-type TabId = Category | `person-${string}` | `tag-${string}`;
+const CATEGORIES: { value: Category | 'all'; label: string }[] = [
+  { value: 'all', label: 'Alles' },
+  { value: 'stuff', label: 'Stuff' },
+  { value: 'eten', label: 'Eten' },
+  { value: 'electronica', label: 'Electronica' },
+  { value: 'pharmacie', label: 'Pharmacie' },
+  { value: 'spelletjes', label: 'Spelletjes' },
+  { value: 'kleren', label: 'Kleren' },
+  { value: 'todo', label: 'TODOs' },
+];
 
 export function TripDetailPage() {
   const { tripId } = useParams<{ tripId: string }>();
@@ -36,11 +34,13 @@ export function TripDetailPage() {
   const duplicate = useDuplicateTrip();
   const updateTrip = useUpdateTrip();
   const renameItem = useRenameItem();
-  const [activeTab, setActiveTab] = useState<TabId>('stuff');
   const [adding, setAdding] = useState(false);
   const [closing, setClosing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState<Category | 'all'>('all');
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [personFilter, setPersonFilter] = useState<string | null>(null);
 
   const personById = useMemo(() => new Map(persons.map(p => [p.id, p])), [persons]);
 
@@ -52,104 +52,27 @@ export function TripDetailPage() {
   const totalCount = items.length;
   const percent = totalCount === 0 ? 0 : Math.round((totalChecked / totalCount) * 100);
 
-  // Build tabs: categories + tags + person tabs
-  const itemsByCategory = new Map<Category, (TripItem & { item: Item })[]>();
-  const itemsByTag = new Map<string, (TripItem & { item: Item })[]>();
-  const itemsByPerson = new Map<string, (TripItem & { item: Item })[]>();
-  const sharedKleren: (TripItem & { item: Item })[] = [];
-
+  // Collect which tags and persons exist on this trip
+  const tripTagIds = new Set<string>();
+  const tripPersonIds = new Set<string>();
   for (const it of items) {
-    const cat = it.item.default_category;
-    if (cat === 'kleren') {
-      if (it.person_id) {
-        const arr = itemsByPerson.get(it.person_id) ?? [];
-        arr.push(it);
-        itemsByPerson.set(it.person_id, arr);
-      } else {
-        sharedKleren.push(it);
-      }
-    } else {
-      const arr = itemsByCategory.get(cat) ?? [];
-      arr.push(it);
-      itemsByCategory.set(cat, arr);
-    }
-    // Also group by tags
-    const tagIds = tagsByItemId.get(it.item_id) ?? [];
-    for (const tagId of tagIds) {
-      const arr = itemsByTag.get(tagId) ?? [];
-      arr.push(it);
-      itemsByTag.set(tagId, arr);
-    }
+    if (it.person_id) tripPersonIds.add(it.person_id);
+    for (const tagId of (tagsByItemId.get(it.item_id) ?? [])) tripTagIds.add(tagId);
   }
+  const tripTags = [...tripTagIds].map(id => tagsById.get(id)).filter(Boolean).sort((a, b) => a!.name.localeCompare(b!.name));
+  const tripPersons = persons.filter(p => tripPersonIds.has(p.id));
 
-  // Tab definitions — categories first
-  const tabs: { id: TabId; label: string; count: number; checked: number; group?: string }[] = [];
-  for (const cat of CATEGORY_ORDER) {
-    if (cat === 'kleren') continue;
-    const arr = itemsByCategory.get(cat);
-    if (arr && arr.length > 0) {
-      tabs.push({ id: cat, label: CATEGORY_LABEL[cat], count: arr.length, checked: arr.filter(i => i.checked).length });
-    }
-  }
-
-  // Tag tabs (fiets, camper, zwemmen, etc.) — only tags with items on this trip
-  const tagTabs: typeof tabs = [];
-  for (const [tagId, tagItems] of itemsByTag) {
-    const tag = tagsById.get(tagId);
-    if (tag && tagItems.length > 0) {
-      tagTabs.push({
-        id: `tag-${tagId}`,
-        label: tag.name.charAt(0).toUpperCase() + tag.name.slice(1),
-        count: tagItems.length,
-        checked: tagItems.filter(i => i.checked).length,
-        group: 'tag',
-      });
-    }
-  }
-  tagTabs.sort((a, b) => a.label.localeCompare(b.label));
-
-  // Shared kleren tab
-  if (sharedKleren.length > 0) {
-    tabs.push({ id: 'kleren', label: 'Kleren', count: sharedKleren.length, checked: sharedKleren.filter(i => i.checked).length });
-  }
-
-  // Person tabs
-  const personTabs: typeof tabs = [];
-  for (const person of persons) {
-    const arr = itemsByPerson.get(person.id);
-    if (arr && arr.length > 0) {
-      personTabs.push({ id: `person-${person.id}`, label: person.name, count: arr.length, checked: arr.filter(i => i.checked).length, group: 'person' });
-    }
-  }
-
-  const allTabs = [...tabs, ...tagTabs, ...personTabs];
-
-  // Ensure activeTab is valid
-  const validTab = allTabs.find(t => t.id === activeTab) ? activeTab : (allTabs[0]?.id ?? 'stuff');
-
-  // Get items for current tab
-  let tabItems: (TripItem & { item: Item })[] = [];
-  if (validTab === 'kleren') {
-    tabItems = sharedKleren;
-  } else if (typeof validTab === 'string' && validTab.startsWith('person-')) {
-    const personId = validTab.replace('person-', '');
-    tabItems = itemsByPerson.get(personId) ?? [];
-  } else if (typeof validTab === 'string' && validTab.startsWith('tag-')) {
-    const tagId = validTab.replace('tag-', '');
-    tabItems = itemsByTag.get(tagId) ?? [];
-  } else {
-    tabItems = itemsByCategory.get(validTab as Category) ?? [];
-  }
-
-  // Sort and filter
-  tabItems = tabItems.slice().sort((a, b) => a.item.name.localeCompare(b.item.name));
+  // Filter items
   const searchTerm = search.trim().toLowerCase();
-  if (searchTerm) tabItems = tabItems.filter(i => i.item.name.toLowerCase().includes(searchTerm));
+  const filtered = items.filter(it => {
+    if (catFilter !== 'all' && it.item.default_category !== catFilter) return false;
+    if (tagFilter && !(tagsByItemId.get(it.item_id) ?? []).includes(tagFilter)) return false;
+    if (personFilter && it.person_id !== personFilter) return false;
+    if (searchTerm && !it.item.name.toLowerCase().includes(searchTerm)) return false;
+    return true;
+  }).sort((a, b) => a.item.name.localeCompare(b.item.name));
 
-  const currentTab = allTabs.find(t => t.id === validTab);
-  const personName = typeof validTab === 'string' && validTab.startsWith('person-')
-    ? personById.get(validTab.replace('person-', ''))?.name ?? null
-    : null;
+  const filteredChecked = filtered.filter(i => i.checked).length;
 
   return (
     <div className="space-y-4">
@@ -197,77 +120,79 @@ export function TripDetailPage() {
         </div>
       </header>
 
-      {/* Filters — library-style chip groups */}
+      {/* Filters */}
       <div className="space-y-3">
         <div>
           <p className="text-eyebrow mb-1.5">Categorie</p>
           <div className="flex flex-wrap gap-1.5">
-            {tabs.map(t => (
-              <button key={t.id} onClick={() => { setActiveTab(t.id); setSearch(''); }}
-                className={`chip ${validTab === t.id ? 'chip-on' : ''}`}>
-                {t.label}
-                <span className={`ml-1 text-[11px] num ${validTab === t.id ? 'text-paper/70' : 'text-muted'}`}>{t.checked}/{t.count}</span>
+            {CATEGORIES.map(c => (
+              <button key={c.value} onClick={() => setCatFilter(c.value)}
+                className={`chip ${catFilter === c.value ? 'chip-on' : ''}`}>
+                {c.label}
               </button>
             ))}
           </div>
         </div>
-        {tagTabs.length > 0 && (
+        {tripTags.length > 0 && (
           <div>
             <p className="text-eyebrow mb-1.5">Tag</p>
             <div className="flex flex-wrap gap-1.5">
-              {tagTabs.map(t => {
-                const tagId = t.id.replace('tag-', '');
-                const tag = tagsById.get(tagId);
-                const icon = tag ? iconFor(tag.name) : null;
+              <button onClick={() => setTagFilter(null)}
+                className={`chip ${!tagFilter ? 'chip-on' : ''}`}>geen filter</button>
+              {tripTags.map(tag => {
+                const icon = iconFor(tag!.name);
                 return (
-                  <button key={t.id} onClick={() => { setActiveTab(t.id); setSearch(''); }}
-                    className={`chip ${validTab === t.id ? 'chip-on' : ''}`}>
+                  <button key={tag!.id} onClick={() => setTagFilter(tagFilter === tag!.id ? null : tag!.id)}
+                    className={`chip ${tagFilter === tag!.id ? 'chip-on' : ''}`}>
                     {icon && <span className="mr-1.5 text-base leading-none">{icon}</span>}
-                    {t.label}
-                    <span className={`ml-1 text-[11px] num ${validTab === t.id ? 'text-paper/70' : 'text-muted'}`}>{t.checked}/{t.count}</span>
+                    {tag!.name}
                   </button>
                 );
               })}
             </div>
           </div>
         )}
-        {personTabs.length > 0 && (
+        {tripPersons.length > 0 && (
           <div>
             <p className="text-eyebrow mb-1.5">Persoon</p>
             <div className="flex flex-wrap gap-1.5">
-              {personTabs.map(t => (
-                <button key={t.id} onClick={() => { setActiveTab(t.id); setSearch(''); }}
-                  className={`chip ${validTab === t.id ? 'chip-on' : ''}`}>
-                  {t.label}
-                  <span className={`ml-1 text-[11px] num ${validTab === t.id ? 'text-paper/70' : 'text-muted'}`}>{t.checked}/{t.count}</span>
+              <button onClick={() => setPersonFilter(null)}
+                className={`chip ${!personFilter ? 'chip-on' : ''}`}>geen filter</button>
+              {tripPersons.map(p => (
+                <button key={p.id} onClick={() => setPersonFilter(personFilter === p.id ? null : p.id)}
+                  className={`chip ${personFilter === p.id ? 'chip-on' : ''}`}>
+                  {p.name}
                 </button>
               ))}
             </div>
           </div>
         )}
-        <button onClick={() => setAdding(true)}
-                className="chip hover:border-accent hover:text-accent">
-          + Item toevoegen
-        </button>
       </div>
 
-      {/* Search */}
+      {/* Search + quick add */}
       <QuickAddBar tripId={tripId!} existingItemIds={new Set(items.map(i => i.item_id))} search={search} onSearchChange={setSearch} />
 
-      {/* Item list — flat, like an Excel sheet */}
+      {/* Item list */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted num">{filteredChecked}/{filtered.length} afgevinkt</p>
+        <button onClick={() => setAdding(true)}
+                className="text-eyebrow text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
+          + Item
+        </button>
+      </div>
       <div className="card overflow-hidden">
-        {tabItems.length === 0 ? (
+        {filtered.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted text-center">
-            {searchTerm ? 'Geen resultaten.' : 'Geen items in dit tabblad.'}
+            {searchTerm ? 'Geen resultaten.' : 'Geen items met deze filters.'}
           </p>
         ) : (
-          tabItems.map(it => (
+          filtered.map(it => (
             <ItemRow
               key={it.id}
               name={it.item.name}
               qty={it.qty}
               checked={it.checked}
-              personName={personName}
+              personName={it.person_id ? personById.get(it.person_id)?.name ?? null : null}
               onToggle={() => toggle.mutate({ id: it.id, checked: !it.checked })}
               onRemove={() => remove.mutate(it.id)}
               onRename={(newName) => renameItem.mutate({ id: it.item_id, name: newName })}
@@ -275,13 +200,6 @@ export function TripDetailPage() {
           ))
         )}
       </div>
-
-      {/* Tab progress */}
-      {currentTab && (
-        <p className="text-center text-xs text-muted num">
-          {currentTab.checked} van {currentTab.count} afgevinkt
-        </p>
-      )}
 
       <AnimatePresence>
         {adding && (
