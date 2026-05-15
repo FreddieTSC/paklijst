@@ -65,6 +65,7 @@ export function ItemRow({ name, qty, checked, personName, onToggle, onRemove, on
           >
             {name}
             {qty && qty > 1 && <span className="num ml-1 text-xs text-muted">×{qty}</span>}
+            {personName && <span className="ml-1.5 text-xs text-muted">· {personName}</span>}
           </span>
         )}
       </div>

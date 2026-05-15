@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTrip, useToggleTripItem, useRemoveTripItem, useDuplicateTrip, useUpdateTrip } from '@/hooks/useTrips';
 import { useRenameItem } from '@/hooks/useItems';
 import { usePersons } from '@/hooks/usePersons';
 import { useRealtimeTrip } from '@/hooks/useRealtimeTrip';
+import { useUploadTripImage, useRemoveTripImage } from '@/hooks/useTripImage';
 import { iconFor } from '@/lib/tagIcons';
 import { ItemRow } from './components/ItemRow';
 import { AddItemPopover } from './components/AddItemPopover';
@@ -34,6 +35,9 @@ export function TripDetailPage() {
   const duplicate = useDuplicateTrip();
   const updateTrip = useUpdateTrip();
   const renameItem = useRenameItem();
+  const uploadImage = useUploadTripImage(tripId!);
+  const removeImage = useRemoveTripImage(tripId!);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [adding, setAdding] = useState(false);
   const [closing, setClosing] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -76,6 +80,14 @@ export function TripDetailPage() {
 
   return (
     <div className="space-y-4">
+      {/* Trip image */}
+      {trip.image_url && (
+        <div className="relative -mx-4 md:-mx-6 -mt-6 md:-mt-10 mb-2 h-40 md:h-56 overflow-hidden rounded-b-lg">
+          <img src={trip.image_url} alt="" className="w-full h-full object-cover grayscale-[30%] opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-paper via-paper/40 to-transparent" />
+        </div>
+      )}
+
       {/* Header */}
       <header className="border-b border-rule pb-4">
         <div className="flex items-baseline justify-between gap-4">
@@ -106,7 +118,11 @@ export function TripDetailPage() {
           <EditTripForm trip={trip} onSave={async (updates) => {
             await updateTrip.mutateAsync({ tripId: trip.id, ...updates });
             setEditing(false);
-          }} onCancel={() => setEditing(false)} />
+          }} onCancel={() => setEditing(false)}
+          onUploadImage={() => fileRef.current?.click()}
+          onRemoveImage={trip.image_url ? () => removeImage.mutate() : undefined}
+          imageUploading={uploadImage.isPending}
+          />
         ) : (
           <>
             <h1 className="mt-2 text-h1 font-semibold tracking-tight">{trip.name}</h1>
@@ -122,6 +138,10 @@ export function TripDetailPage() {
                       transition={{ type: 'spring', damping: 22, stiffness: 200 }} />
         </div>
       </header>
+
+      {/* Hidden file input for image upload */}
+      <input ref={fileRef} type="file" accept="image/*" className="hidden"
+             onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage.mutate(f); e.target.value = ''; }} />
 
       {/* Filters */}
       <div className="space-y-3">
@@ -227,10 +247,13 @@ export function TripDetailPage() {
 }
 
 
-function EditTripForm({ trip, onSave, onCancel }: {
+function EditTripForm({ trip, onSave, onCancel, onUploadImage, onRemoveImage, imageUploading }: {
   trip: Trip;
   onSave: (updates: { name?: string; start_date?: string | null; end_date?: string | null }) => Promise<void>;
   onCancel: () => void;
+  onUploadImage: () => void;
+  onRemoveImage?: () => void;
+  imageUploading: boolean;
 }) {
   const [name, setName] = useState(trip.name);
   const [start, setStart] = useState(trip.start_date ?? '');
@@ -250,6 +273,19 @@ function EditTripForm({ trip, onSave, onCancel }: {
           <span className="block text-eyebrow mb-1">Terug</span>
           <input type="date" className="input num" value={end} onChange={e => setEnd(e.target.value)} />
         </label>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-eyebrow">Foto</span>
+        <button type="button" onClick={onUploadImage} disabled={imageUploading}
+                className="text-xs text-muted hover:text-ink underline decoration-rule underline-offset-4">
+          {imageUploading ? 'Uploaden…' : trip.image_url ? 'Wijzig foto' : '+ Foto toevoegen'}
+        </button>
+        {onRemoveImage && (
+          <button type="button" onClick={onRemoveImage}
+                  className="text-xs text-muted hover:text-accent2 underline decoration-rule underline-offset-4">
+            Verwijder
+          </button>
+        )}
       </div>
       <div className="flex gap-2">
         <button className="btn-primary" disabled={saving} onClick={async () => {

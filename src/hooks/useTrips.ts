@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { T } from '@/lib/db';
 import { useHousehold } from './useHousehold';
+import { pickTripPhoto } from '@/lib/tripPhotos';
 import type { Trip, TripContext, TripItem, Item, Tag, ItemTag } from '@/lib/types';
 import type { TripItemDraft } from '@/lib/generator';
 
@@ -73,6 +74,8 @@ export interface CreateTripInput {
   end_date: string | null;
   context: TripContext;
   drafts: TripItemDraft[];
+  /** If the user picked a custom image, skip auto-photo. */
+  image_url?: string | null;
 }
 
 export function useCreateTrip() {
@@ -82,6 +85,7 @@ export function useCreateTrip() {
 
   return useMutation({
     mutationFn: async (input: CreateTripInput) => {
+      const photo = input.image_url ?? pickTripPhoto(input.context);
       const { data: trip, error: e1 } = await supabase.from(T.trip).insert({
         household_id: householdId!,
         name: input.name,
@@ -89,6 +93,7 @@ export function useCreateTrip() {
         end_date: input.end_date,
         status: 'active',
         context: input.context as unknown as Trip['context'],
+        image_url: photo,
       }).select('*').single();
       if (e1) throw e1;
 

@@ -37,6 +37,19 @@ export function useCreatePerson() {
   });
 }
 
+export function useUpdatePerson() {
+  const qc = useQueryClient();
+  const { data: hh } = useHousehold();
+  const householdId = hh?.household?.id;
+  return useMutation({
+    mutationFn: async ({ id, name, is_child }: { id: string; name: string; is_child: boolean }) => {
+      const { error } = await supabase.from(T.person).update({ name, is_child }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['persons', householdId] }),
+  });
+}
+
 export function useDeletePerson() {
   const qc = useQueryClient();
   const { data: hh } = useHousehold();

@@ -15,7 +15,7 @@ export interface Item             { id: string; household_id: string; name: stri
 export interface Tag              { id: string; household_id: string; name: string; kind: TagKind; }
 export interface ItemTag          { item_id: string; tag_id: string; }
 export interface ItemForPerson    { item_id: string; person_id: string; }
-export interface Trip             { id: string; household_id: string; name: string; start_date: string|null; end_date: string|null; status: TripStatus; context: TripContext; created_at: string; }
+export interface Trip             { id: string; household_id: string; name: string; start_date: string|null; end_date: string|null; status: TripStatus; context: TripContext; image_url: string|null; created_at: string; }
 export interface TripContext      { persons: string[]; triptypes: string[]; weather: string[]; activities: string[]; }
 export interface TripItem         { id: string; trip_id: string; item_id: string; person_id: string|null; checked: boolean; checked_by: string|null; checked_at: string|null; added_manually: boolean; qty: number; }
 export interface TripFeedback     { id: string; trip_id: string; item_id: string; verdict: Verdict; context_snapshot: Partial<TripContext>; created_at: string; }

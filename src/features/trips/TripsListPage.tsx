@@ -80,7 +80,12 @@ function TripCard({ trip, onDuplicate, onClose, onDelete }: {
   const tags = [...(ctx.triptypes ?? []), ...(ctx.weather ?? []), ...(ctx.activities ?? [])];
   const linkCls = "text-xs text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink transition-colors";
   return (
-    <div className="card group hover:border-ink/40 transition-colors relative">
+    <div className="card group hover:border-ink/40 transition-colors relative overflow-hidden">
+      {trip.image_url && (
+        <div className="h-28 overflow-hidden">
+          <img src={trip.image_url} alt="" className="w-full h-full object-cover grayscale-[30%] opacity-75" />
+        </div>
+      )}
       <Link to={`/trips/${trip.id}`} className="block p-5">
         <div className="flex items-start justify-between gap-4">
           <h3 className="text-h2 font-semibold tracking-tight">{trip.name}</h3>

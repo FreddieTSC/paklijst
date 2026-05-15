@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, useRef, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useItems } from '@/hooks/useItems';
 import { useTags } from '@/hooks/useTags';
@@ -27,6 +27,9 @@ export function TripCompositorPage() {
   const [selTriptypes, setSelTriptypes] = useState<string[]>([]);
   const [selWeather, setSelWeather] = useState<string[]>([]);
   const [selActivities, setSelActivities] = useState<string[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [err, setErr] = useState<string | null>(null);
 
   // Pull all feedback rows for this household so generator can use them.
@@ -86,12 +89,23 @@ export function TripCompositorPage() {
     setErr(null);
     if (!name.trim()) { setErr('Geef je reis een naam.'); return; }
     try {
+      // If user picked a custom photo, upload first and pass URL
+      let customImageUrl: string | undefined;
+      if (imageFile) {
+        const tmpId = crypto.randomUUID();
+        const ext = imageFile.name.split('.').pop() ?? 'jpg';
+        const path = `${tmpId}/${Date.now()}.${ext}`;
+        await supabase.storage.from('trip-images').upload(path, imageFile, { upsert: true });
+        const { data: { publicUrl } } = supabase.storage.from('trip-images').getPublicUrl(path);
+        customImageUrl = publicUrl;
+      }
       const trip = await createTrip.mutateAsync({
         name: name.trim(),
         start_date: start || null,
         end_date: end || null,
         context: ctx,
         drafts,
+        image_url: customImageUrl,
       });
       nav(`/trips/${trip.id}`, { replace: true });
     } catch (caught) {
@@ -128,6 +142,38 @@ export function TripCompositorPage() {
             <span className="block text-eyebrow mb-2">Terug</span>
             <input type="date" className="input num" value={end} onChange={e => setEnd(e.target.value)} />
           </label>
+        </div>
+
+        {/* Photo upload */}
+        <div>
+          <span className="block text-eyebrow mb-2">Foto</span>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                 onChange={e => {
+                   const f = e.target.files?.[0];
+                   if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)); }
+                   e.target.value = '';
+                 }} />
+          {imagePreview ? (
+            <div className="relative h-32 rounded-md overflow-hidden border border-rule">
+              <img src={imagePreview} alt="" className="w-full h-full object-cover grayscale-[30%] opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-paper/60 to-transparent" />
+              <div className="absolute bottom-2 right-2 flex gap-2">
+                <button type="button" onClick={() => fileRef.current?.click()}
+                        className="text-[11px] bg-paper/80 backdrop-blur px-2 py-1 rounded border border-rule text-muted hover:text-ink">
+                  Wijzig
+                </button>
+                <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }}
+                        className="text-[11px] bg-paper/80 backdrop-blur px-2 py-1 rounded border border-rule text-muted hover:text-accent2">
+                  Verwijder
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => fileRef.current?.click()}
+                    className="w-full h-20 border border-dashed border-rule rounded-md text-sm text-muted hover:text-ink hover:border-ink/30 transition-colors">
+              + Kies een foto voor deze reis
+            </button>
+          )}
         </div>
 
         <ChipGroup

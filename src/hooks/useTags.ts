@@ -34,3 +34,29 @@ export function useCreateTag() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tags', householdId] }),
   });
 }
+
+export function useUpdateTag() {
+  const qc = useQueryClient();
+  const { data: hh } = useHousehold();
+  const householdId = hh?.household?.id;
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await supabase.from(T.tag).update({ name }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tags', householdId] }),
+  });
+}
+
+export function useDeleteTag() {
+  const qc = useQueryClient();
+  const { data: hh } = useHousehold();
+  const householdId = hh?.household?.id;
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from(T.tag).delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tags', householdId] }),
+  });
+}

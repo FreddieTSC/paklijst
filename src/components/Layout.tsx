@@ -4,7 +4,7 @@ import { useHousehold } from '@/hooks/useHousehold';
 const NAV = [
   { to: '/trips',    label: 'Reizen',    short: 'Reizen' },
   { to: '/library',  label: 'Bibliotheek', short: 'Items' },
-  { to: '/profile',  label: 'Profiel',   short: 'Profiel' },
+  { to: '/settings', label: 'Instellingen', short: 'Instell.' },
 ];
 
 export function Layout() {

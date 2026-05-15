@@ -5,7 +5,7 @@ import { TripsListPage } from './features/trips/TripsListPage';
 import { TripCompositorPage } from './features/trips/TripCompositorPage';
 import { TripDetailPage } from './features/trips/TripDetailPage';
 import { LibraryPage } from './features/library/LibraryPage';
-import { ProfilePage } from './features/profile/ProfilePage';
+import { SettingsPage } from './features/settings/SettingsPage';
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +17,7 @@ export const router = createBrowserRouter([
       { path: 'trips/new',      element: <TripCompositorPage /> },
       { path: 'trips/:tripId',  element: <TripDetailPage /> },
       { path: 'library',        element: <LibraryPage /> },
-      { path: 'profile',        element: <ProfilePage /> },
+      { path: 'settings',       element: <SettingsPage /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },
