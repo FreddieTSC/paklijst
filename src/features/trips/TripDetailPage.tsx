@@ -76,7 +76,8 @@ export function TripDetailPage() {
     return true;
   }).sort((a, b) => a.item.name.localeCompare(b.item.name));
 
-  const filteredChecked = filtered.filter(i => i.checked).length;
+  const openItems = filtered.filter(i => !i.checked);
+  const checkedItems = filtered.filter(i => i.checked);
 
   return (
     <div className="space-y-4">
@@ -197,32 +198,57 @@ export function TripDetailPage() {
 
       {/* Item list */}
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted num">{filteredChecked}/{filtered.length} afgevinkt</p>
+        <p className="text-xs text-muted num">{checkedItems.length}/{filtered.length} afgevinkt</p>
         <button onClick={() => setAdding(true)}
                 className="text-eyebrow text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
           + Item
         </button>
       </div>
-      <div className="card overflow-hidden">
-        {filtered.length === 0 ? (
+      {filtered.length === 0 ? (
+        <div className="card overflow-hidden">
           <p className="px-4 py-6 text-sm text-muted text-center">
             {searchTerm ? 'Geen resultaten.' : 'Geen items met deze filters.'}
           </p>
-        ) : (
-          filtered.map(it => (
-            <ItemRow
-              key={it.id}
-              name={it.item.name}
-              qty={it.qty}
-              checked={it.checked}
-              personName={it.person_id ? personById.get(it.person_id)?.name ?? null : null}
-              onToggle={() => toggle.mutate({ id: it.id, checked: !it.checked })}
-              onRemove={() => remove.mutate(it.id)}
-              onRename={(newName) => renameItem.mutate({ id: it.item_id, name: newName })}
-            />
-          ))
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          {openItems.length > 0 && (
+            <div className="card overflow-hidden">
+              {openItems.map(it => (
+                <ItemRow
+                  key={it.id}
+                  name={it.item.name}
+                  qty={it.qty}
+                  checked={it.checked}
+                  personName={it.person_id ? personById.get(it.person_id)?.name ?? null : null}
+                  onToggle={() => toggle.mutate({ id: it.id, checked: !it.checked })}
+                  onRemove={() => remove.mutate(it.id)}
+                  onRename={(newName) => renameItem.mutate({ id: it.item_id, name: newName })}
+                />
+              ))}
+            </div>
+          )}
+          {checkedItems.length > 0 && (
+            <>
+              <p className="text-eyebrow text-muted mt-2">Afgevinkt</p>
+              <div className="card overflow-hidden opacity-60">
+                {checkedItems.map(it => (
+                  <ItemRow
+                    key={it.id}
+                    name={it.item.name}
+                    qty={it.qty}
+                    checked={it.checked}
+                    personName={it.person_id ? personById.get(it.person_id)?.name ?? null : null}
+                    onToggle={() => toggle.mutate({ id: it.id, checked: !it.checked })}
+                    onRemove={() => remove.mutate(it.id)}
+                    onRename={(newName) => renameItem.mutate({ id: it.item_id, name: newName })}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
 
       <AnimatePresence>
         {adding && (
