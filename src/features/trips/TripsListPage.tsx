@@ -1,12 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useTrips, useDuplicateTrip, useUpdateTrip, useDeleteTrip } from '@/hooks/useTrips';
-import type { Trip, TripStatus } from '@/lib/types';
-
-const STATUS_LABEL: Record<TripStatus, string> = {
-  planning: 'Planning',
-  active: 'Open',
-  closed: 'Afgerond',
-};
+import type { Trip } from '@/lib/types';
 
 export function TripsListPage() {
   const { data: trips = [], isLoading } = useTrips();
@@ -15,8 +9,23 @@ export function TripsListPage() {
   const updateTrip = useUpdateTrip();
   const deleteTrip = useDeleteTrip();
 
-  const grouped: Record<TripStatus, Trip[]> = { active: [], planning: [], closed: [] };
-  for (const t of trips) grouped[t.status].push(t);
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming: Trip[] = [];
+  const past: Trip[] = [];
+  for (const t of trips) {
+    if (t.end_date && t.end_date < today) {
+      past.push(t);
+    } else {
+      upcoming.push(t);
+    }
+  }
+  const byDate = (a: Trip, b: Trip) => {
+    const da = a.start_date ?? '9999';
+    const db = b.start_date ?? '9999';
+    return da.localeCompare(db);
+  };
+  upcoming.sort(byDate);
+  past.sort((a, b) => byDate(b, a));
 
   return (
     <div className="space-y-12">
@@ -44,11 +53,11 @@ export function TripsListPage() {
         </div>
       )}
 
-      {(['active','planning','closed'] as TripStatus[]).map(status => grouped[status].length > 0 && (
-        <section key={status}>
-          <p className="eyebrow mb-4">{STATUS_LABEL[status]}</p>
+      {upcoming.length > 0 && (
+        <section>
+          <p className="eyebrow mb-4">Aankomend</p>
           <ul className="grid grid-cols-12 gap-4">
-            {grouped[status].map((t, idx) => (
+            {upcoming.map((t, idx) => (
               <li key={t.id}
                   className={`col-span-12 ${idx % 5 === 0 ? 'md:col-span-7' : 'md:col-span-5'}`}>
                 <TripCard trip={t}
@@ -65,7 +74,29 @@ export function TripsListPage() {
             ))}
           </ul>
         </section>
-      ))}
+      )}
+      {past.length > 0 && (
+        <section>
+          <p className="eyebrow mb-4">Voorbij</p>
+          <ul className="grid grid-cols-12 gap-4">
+            {past.map((t, idx) => (
+              <li key={t.id}
+                  className={`col-span-12 ${idx % 5 === 0 ? 'md:col-span-7' : 'md:col-span-5'}`}>
+                <TripCard trip={t}
+                  onDuplicate={async () => {
+                    const trip = await duplicate.mutateAsync(t.id);
+                    nav(`/trips/${trip.id}`);
+                  }}
+                  onClose={() => updateTrip.mutate({ tripId: t.id, status: 'closed' })}
+                  onDelete={() => {
+                    if (window.confirm(`"${t.name}" definitief verwijderen?`)) deleteTrip.mutate(t.id);
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
