@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useItems } from '@/hooks/useItems';
+import { useMemo, useState, useRef } from 'react';
+import { useItems, useUpsertItem } from '@/hooks/useItems';
 import { useAddTripItem } from '@/hooks/useTrips';
 
 interface Props {
@@ -11,50 +11,152 @@ interface Props {
 
 export function QuickAddBar({ tripId, existingItemIds, search, onSearchChange }: Props) {
   const { data: items = [] } = useItems();
-  const add = useAddTripItem(tripId);
+  const addToTrip = useAddTripItem(tripId);
+  const createItem = useUpsertItem();
   const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const term = search.trim().toLowerCase();
 
   const suggestions = useMemo(() => {
-    const term = search.trim().toLowerCase();
     if (!term) return [];
     return items
       .filter(i => i.name.toLowerCase().includes(term))
-      .filter(i => !existingItemIds.has(i.id))
-      .slice(0, 6);
-  }, [search, items, existingItemIds]);
+      .slice(0, 8);
+  }, [term, items]);
 
-  async function pick(itemId: string) {
-    await add.mutateAsync({ item_id: itemId });
-    onSearchChange('');
-    setOpen(false);
+  const exactMatch = useMemo(
+    () => items.find(i => i.name.toLowerCase() === term),
+    [term, items],
+  );
+
+  async function addExisting(itemId: string) {
+    if (existingItemIds.has(itemId)) {
+      onSearchChange('');
+      setOpen(false);
+      return;
+    }
+    setAdding(true);
+    try {
+      await addToTrip.mutateAsync({ item_id: itemId });
+      onSearchChange('');
+      setOpen(false);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function addNew() {
+    if (!term) return;
+    if (exactMatch) {
+      await addExisting(exactMatch.id);
+      return;
+    }
+    setAdding(true);
+    try {
+      const itemId = await createItem.mutateAsync({
+        name: search.trim(),
+        kind: 'packable',
+        default_category: 'stuff',
+        wear_on_travel: false,
+        notes: null,
+        qty: 1,
+        qty_per_day: false,
+        tag_ids: [],
+        person_ids: [],
+      });
+      await addToTrip.mutateAsync({ item_id: itemId });
+      onSearchChange('');
+      setOpen(false);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' && term) {
+      e.preventDefault();
+      addNew();
+    }
+    if (e.key === 'Escape') {
+      onSearchChange('');
+      setOpen(false);
+      inputRef.current?.blur();
+    }
   }
 
   return (
     <div className="relative">
-      <input
-        className="input"
-        placeholder="Zoek in lijst of voeg toe…"
-        value={search}
-        onChange={e => { onSearchChange(e.target.value); setOpen(true); }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-      />
-      {open && search.trim() && suggestions.length > 0 && (
-        <ul className="absolute z-30 left-0 right-0 mt-1 bg-white border border-rule rounded-md shadow-card divide-y divide-rule overflow-hidden">
-          <li className="px-3 py-1.5 text-[11px] text-muted uppercase tracking-wide bg-paper">Toevoegen aan reis</li>
-          {suggestions.map(i => (
-            <li key={i.id}>
-              <button onMouseDown={e => e.preventDefault()} onClick={() => pick(i.id)}
-                      className="w-full text-left px-3 py-2 hover:bg-paper transition-colors flex items-center justify-between gap-3">
-                <span>
-                  {i.name}
-                  {i.qty > 1 && <span className="num text-sm text-muted ml-2">× {i.qty}</span>}
-                </span>
-                <span className="text-eyebrow text-muted">{i.default_category}</span>
+      <div className="flex gap-2">
+        <input
+          ref={inputRef}
+          className="input flex-1"
+          placeholder="Voeg toe… bv. Zonnebril"
+          value={search}
+          onChange={e => { onSearchChange(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 200)}
+          onKeyDown={handleKeyDown}
+          disabled={adding}
+        />
+        {term && (
+          <button
+            onMouseDown={e => e.preventDefault()}
+            onClick={addNew}
+            disabled={adding}
+            className="btn-primary shrink-0 px-4"
+          >
+            {adding ? '…' : '+'}
+          </button>
+        )}
+      </div>
+
+      {open && term && suggestions.length > 0 && (
+        <ul className="absolute z-30 left-0 right-0 mt-1 bg-white border border-rule rounded-md shadow-card overflow-hidden">
+          {suggestions.map(i => {
+            const inTrip = existingItemIds.has(i.id);
+            return (
+              <li key={i.id}>
+                <button
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => addExisting(i.id)}
+                  disabled={inTrip}
+                  className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-colors
+                             ${inTrip ? 'opacity-40' : 'active:bg-paper/80'}`}
+                >
+                  <span className="text-sm">{i.name}</span>
+                  <span className="text-[11px] text-muted shrink-0">
+                    {inTrip ? 'al in lijst' : i.default_category}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+          {!exactMatch && (
+            <li className="border-t border-rule">
+              <button
+                onMouseDown={e => e.preventDefault()}
+                onClick={addNew}
+                className="w-full text-left px-4 py-3 active:bg-paper/80 transition-colors text-sm text-accent font-medium"
+              >
+                + "{search.trim()}" toevoegen
               </button>
             </li>
-          ))}
+          )}
         </ul>
+      )}
+
+      {open && term && suggestions.length === 0 && (
+        <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-rule rounded-md shadow-card overflow-hidden">
+          <button
+            onMouseDown={e => e.preventDefault()}
+            onClick={addNew}
+            className="w-full text-left px-4 py-3 active:bg-paper/80 transition-colors text-sm text-accent font-medium"
+          >
+            + "{search.trim()}" toevoegen
+          </button>
+        </div>
       )}
     </div>
   );

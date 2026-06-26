@@ -8,7 +8,6 @@ import { useRealtimeTrip } from '@/hooks/useRealtimeTrip';
 import { useUploadTripImage, useRemoveTripImage } from '@/hooks/useTripImage';
 import { iconFor } from '@/lib/tagIcons';
 import { ItemRow } from './components/ItemRow';
-import { AddItemPopover } from './components/AddItemPopover';
 import { CloseTripModal } from './components/CloseTripModal';
 import { QuickAddBar } from './components/QuickAddBar';
 import type { Category, Trip } from '@/lib/types';
@@ -38,7 +37,6 @@ export function TripDetailPage() {
   const uploadImage = useUploadTripImage(tripId!);
   const removeImage = useRemoveTripImage(tripId!);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [adding, setAdding] = useState(false);
   const [closing, setClosing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [search, setSearch] = useState('');
@@ -197,13 +195,7 @@ export function TripDetailPage() {
       <QuickAddBar tripId={tripId!} existingItemIds={new Set(items.map(i => i.item_id))} search={search} onSearchChange={setSearch} />
 
       {/* Item list */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted num">{checkedItems.length}/{filtered.length} afgevinkt</p>
-        <button onClick={() => setAdding(true)}
-                className="text-eyebrow text-muted hover:text-ink underline decoration-rule underline-offset-4 hover:decoration-ink">
-          + Item
-        </button>
-      </div>
+      <p className="text-xs text-muted num">{checkedItems.length}/{filtered.length} afgevinkt</p>
       {filtered.length === 0 ? (
         <div className="card overflow-hidden">
           <p className="px-4 py-6 text-sm text-muted text-center">
@@ -251,13 +243,6 @@ export function TripDetailPage() {
       )}
 
       <AnimatePresence>
-        {adding && (
-          <AddItemPopover
-            tripId={tripId!}
-            onClose={() => setAdding(false)}
-            existingItemIds={new Set(items.map(i => i.item_id))}
-          />
-        )}
         {closing && (
           <CloseTripModal
             tripId={tripId!}
