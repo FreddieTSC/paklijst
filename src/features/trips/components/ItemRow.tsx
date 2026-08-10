@@ -23,13 +23,6 @@ export function ItemRow({ name, qty, checked, personName, onToggle, onRemove, on
     setEditing(false);
   }
 
-  function handleRemove() {
-    const msg = personName
-      ? `Dag ${personName}, weet je zeker dat je geen "${name}" wilt meenemen deze vakantie?`
-      : `Wil je "${name}" zeker niet meenemen op deze vakantie?`;
-    if (window.confirm(msg)) onRemove();
-  }
-
   return (
     <div className={`flex items-center gap-2.5 px-3 md:px-4 py-1.5 md:py-2 border-b border-rule last:border-b-0 transition-colors
                      ${checked ? 'bg-paper/60' : ''}`}>
@@ -72,8 +65,10 @@ export function ItemRow({ name, qty, checked, personName, onToggle, onRemove, on
 
       {/* Remove */}
       <button
-        onClick={handleRemove}
-        className="text-muted/30 hover:text-accent2 transition-colors shrink-0 text-sm leading-none"
+        onClick={onRemove}
+        className="w-7 h-7 -mr-1 flex items-center justify-center shrink-0 rounded
+                   text-xl leading-none text-accent2/70 hover:text-accent2 hover:bg-accent2/10
+                   active:scale-90 transition"
         aria-label="Verwijderen"
       >×</button>
     </div>
