@@ -3,8 +3,12 @@
 Packing list PWA — Vite + React + TypeScript + Supabase + TanStack Query.
 
 - Supabase project: `bxfurgthnptiorahjrrl`
-- Netlify site: `6291e70b-8295-4702-b709-fd6769087eff` / https://inpaklijst-kk56.netlify.app
-- Deploy: build in worktree, `rm -rf main/dist && cp -r worktree/dist main/dist`, deploy via Netlify MCP
+- **Productie is Vercel: https://inpaklijst.vercel.app** — project `inpaklijst`, scope `freddietsc`. Dit is de site die Tiemen gebruikt.
+- Deploy: build in worktree, `rm -rf main/dist && cp -r worktree/dist main/dist`, dan vanuit `main/dist`:
+  `npx vercel deploy --prod --yes --scope freddietsc` (de map is gelinkt via `dist/.vercel`; `dist/vercel.json` bevat de SPA-rewrite en moet mee)
+- Netlify (`6291e70b-8295-4702-b709-fd6769087eff` / https://inpaklijst-kk56.netlify.app) bestaat ook, maar is **niet** de site die Tiemen bekijkt. Deployen naar Netlify alleen verandert er voor hem niets.
+- `dist/` wordt bij elke deploy weggegooid en opnieuw gekopieerd — herstel daarna `vercel.json` en her-link met
+  `npx vercel link --yes --scope freddietsc --project inpaklijst`
 - Categories zijn hardcoded TypeScript types, tags zijn dynamic in Supabase
 - `inpaklijst_item.kind` constraint: `'packable'` of `'todo'` (niet `'pack'`)
 - Service worker caching is agressief — na deploy: unregister SW + clear caches
