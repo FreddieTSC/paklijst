@@ -66,8 +66,8 @@ export function ItemRow({ name, qty, checked, personName, onToggle, onRemove, on
       {/* Remove */}
       <button
         onClick={onRemove}
-        className="w-7 h-7 -mr-1 flex items-center justify-center shrink-0 rounded
-                   text-xl leading-none text-accent2/70 hover:text-accent2 hover:bg-accent2/10
+        className="w-8 h-8 -mr-1 flex items-center justify-center shrink-0 rounded
+                   text-2xl leading-none font-light text-accent2 hover:bg-accent2/15
                    active:scale-90 transition"
         aria-label="Verwijderen"
       >×</button>

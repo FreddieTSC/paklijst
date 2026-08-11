@@ -10,6 +10,7 @@ import { iconFor } from '@/lib/tagIcons';
 import { ItemRow } from './components/ItemRow';
 import { CloseTripModal } from './components/CloseTripModal';
 import { QuickAddBar } from './components/QuickAddBar';
+import { TripPhoto } from './components/TripPhoto';
 import type { Category, Trip } from '@/lib/types';
 
 const CATEGORIES: { value: Category | 'all'; label: string }[] = [
@@ -80,12 +81,12 @@ export function TripDetailPage() {
   return (
     <div className="space-y-4">
       {/* Trip image */}
-      {trip.image_url && (
-        <div className="relative -mx-4 md:-mx-6 -mt-6 md:-mt-10 mb-2 h-40 md:h-56 overflow-hidden rounded-b-lg">
-          <img src={trip.image_url} alt="" className="w-full h-full object-cover grayscale-[30%] opacity-80" />
-          <div className="absolute inset-0 bg-gradient-to-t from-paper via-paper/40 to-transparent" />
-        </div>
-      )}
+      <TripPhoto
+        trip={trip}
+        wrapperClassName="relative -mx-4 md:-mx-6 -mt-6 md:-mt-10 mb-2 h-40 md:h-56 overflow-hidden rounded-b-lg"
+        imgClassName="w-full h-full object-cover grayscale-[30%] opacity-80"
+        overlayClassName="absolute inset-0 bg-gradient-to-t from-paper via-paper/40 to-transparent"
+      />
 
       {/* Header */}
       <header className="border-b border-rule pb-4">
