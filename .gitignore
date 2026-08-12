@@ -17,3 +17,5 @@ scripts/import-output.json
 scripts/import.sql
 scripts/items.json
 scripts/library-dump.md
+
+.vercel
