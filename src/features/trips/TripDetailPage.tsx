@@ -76,7 +76,12 @@ export function TripDetailPage() {
   }).sort((a, b) => a.item.name.localeCompare(b.item.name));
 
   const openItems = filtered.filter(i => !i.checked);
-  const checkedItems = filtered.filter(i => i.checked);
+  // Most recently checked first, so what you just ticked off lands at the top of
+  // the section instead of disappearing into the alphabet. ISO timestamps sort
+  // chronologically as strings; items checked before checked_at was recorded
+  // have none and keep their alphabetical order at the bottom.
+  const checkedItems = filtered.filter(i => i.checked)
+    .sort((a, b) => (b.checked_at ?? '').localeCompare(a.checked_at ?? ''));
 
   return (
     <div className="space-y-4">

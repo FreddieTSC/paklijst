@@ -133,13 +133,15 @@ export function useToggleTripItem(tripId: string) {
       if (error) throw error;
     },
     onMutate: async ({ id, checked }) => {
-      // optimistic
+      // optimistic — checked_at moves with it, otherwise the afgevinkt list
+      // sorts the item you just ticked to the bottom until the refetch lands.
+      const checked_at = checked ? new Date().toISOString() : null;
       await qc.cancelQueries({ queryKey: ['trip', tripId] });
       const prev = qc.getQueryData<{ items: TripItem[] } | null>(['trip', tripId]);
       if (prev) {
         qc.setQueryData(['trip', tripId], {
           ...prev,
-          items: prev.items.map(it => it.id === id ? { ...it, checked } : it),
+          items: prev.items.map(it => it.id === id ? { ...it, checked, checked_at } : it),
         });
       }
       return { prev };
