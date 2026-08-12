@@ -3,7 +3,10 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
+import { reloadOnServiceWorkerUpdate } from './lib/swRefresh';
 import './styles/index.css';
+
+reloadOnServiceWorkerUpdate();
 
 const qc = new QueryClient({
   defaultOptions: {

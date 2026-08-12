@@ -6,7 +6,7 @@ Packing list PWA — Vite + React + TypeScript + Supabase + TanStack Query.
 - **Productie is Vercel: https://inpaklijst.vercel.app** — project `inpaklijst`, scope `freddietsc`. Dit is de site die Tiemen gebruikt.
 - Deploy: build in worktree, `rm -rf main/dist && cp -r worktree/dist main/dist`, dan vanuit `main/dist`:
   `npx vercel deploy --prod --yes --scope freddietsc` (de map is gelinkt via `dist/.vercel`; `dist/vercel.json` bevat de SPA-rewrite en moet mee)
-- Netlify (`6291e70b-8295-4702-b709-fd6769087eff` / https://inpaklijst-kk56.netlify.app) bestaat ook, maar is **niet** de site die Tiemen bekijkt. Deployen naar Netlify alleen verandert er voor hem niets.
+- Vercel is de enige host. De oude Netlify-site is op 2026-08-12 verwijderd; `netlify.toml` is uit de repo.
 - `dist/` wordt bij elke deploy weggegooid en opnieuw gekopieerd — herstel daarna `vercel.json` en her-link met
   `npx vercel link --yes --scope freddietsc --project inpaklijst`
 - Categories zijn hardcoded TypeScript types, tags zijn dynamic in Supabase

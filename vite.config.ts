@@ -9,6 +9,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
+      // Drop precaches from earlier builds instead of letting them pile up and
+      // keep serving stale assets.
+      workbox: { cleanupOutdatedCaches: true },
       manifest: {
         name: 'Inpaklijst',
         short_name: 'Inpaklijst',
